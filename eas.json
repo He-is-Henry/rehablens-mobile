@@ -13,7 +13,8 @@
       "channel": "preview",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "prebuildCommand": "node scripts/fix-pose-detection.js"
     },
     "production": {
       "autoIncrement": true,
