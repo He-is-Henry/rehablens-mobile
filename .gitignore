@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# manual tracking
+!node_modules/@scottjgilroy/react-native-vision-camera-v4-pose-detection/android/src/main/java/com/visioncamerav3posedetection/VisionCameraV3PoseDetectionModule.kt
+
 # Expo
 .expo/
 dist/
