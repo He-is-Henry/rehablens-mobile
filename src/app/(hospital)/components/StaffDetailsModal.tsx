@@ -1,7 +1,9 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
+import { useQuery } from '@/hooks/useQuery';
 import { getLinkedPatients, getStaffById, updateStaff } from '@/lib/hospital';
 import { UserRole, UserRoleValues } from '@/types/role';
-import { useEffect, useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import AssignPatientSection from './AssignPatientSection';
@@ -9,44 +11,65 @@ import AssignPatientSection from './AssignPatientSection';
 type Props = {
   staffId: string;
   close(): void;
-  onUpdated(): void;
+  onUpdated(updatedStaff: User): void;
 }
 
 export default function StaffDetailModal({ staffId, close, onUpdated }: Props) {
+  const getStaffByIdQuery: Query<User> = {
+    key: `/hospital/staff/${staffId}`,
+    fetcher: () => getStaffById(staffId)
+  }
+
+  const getLinkedPatientsQuery: Query<Link[]> = {
+    key: `/hospital/patients/${staffId}`,
+    fetcher: () => getLinkedPatients(undefined, staffId)
+  }
+
   const scrollRef = useRef<ScrollView>(null);
 
-  const [loading, setLoading] = useState(true);
+  const { data: staff, setData: setStaff, loading } = useQuery(getStaffByIdQuery);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState<UserRole | null>(null);
-  const [isActive, setIsActive] = useState(true);
+  const { data: assignedLinks, setData: setAssignedLinks, loading: loadingAssigned } = useQuery(getLinkedPatientsQuery);
 
-  const [assignedLinks, setAssignedLinks] = useState<Link[]>([]);
-  const [loadingAssigned, setLoadingAssigned] = useState(true);
 
-  useEffect(() => {
-    getStaffById(staffId)
-      .then((staff) => {
-        setName(staff.name);
-        setEmail(staff.email);
-        setRole(staff.role as UserRole);
-        setIsActive(staff.isActive);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [staffId]);
+  if (!staff) return;
 
-  const loadAssigned = () => {
-    setLoadingAssigned(true);
-    getLinkedPatients(undefined, staffId)
-      .then(setAssignedLinks)
-      .finally(() => setLoadingAssigned(false));
+  const { name, email, role, isActive, } = staff;
+
+
+  const setValue = <K extends keyof User>(
+    key: K,
+    value: NewData<User[K]>
+  ) => {
+    const prev = staff[key];
+
+    const newValue =
+      typeof value === "function" && typeof prev !== "undefined"
+        ? value(prev)
+        : value;
+
+    setStaff({
+      ...staff,
+      [key]: newValue,
+    });
   };
 
-  useEffect(loadAssigned, [staffId]);
+  const setName = (value: NewData<string>) => {
+    setValue('name', value)
+  }
+  const setEmail = (value: NewData<string>) => {
+    setValue('email', value)
+  }
+  const setRole = (value: NewData<UserRole>) => {
+    setValue('role', value)
+  }
+  const setIsActive = (value: NewData<boolean>) => {
+    setValue('isActive', value)
+  }
+
 
   const handleSave = async () => {
     setError('');
@@ -54,9 +77,15 @@ export default function StaffDetailModal({ staffId, close, onUpdated }: Props) {
 
     setSaving(true);
     try {
-      await updateStaff(staffId, { name, email, role, isActive });
+      const updatedStaff = await updateStaff(staffId, {
+        name,
+        email,
+        role,
+        isActive,
+        isPioneer: staff.isPioneer,
+      });
       Toast.show({ type: 'success', text1: 'Staff updated' });
-      onUpdated();
+      onUpdated(updatedStaff);
       close();
     } catch (e: any) {
       setError(e.message);
@@ -64,6 +93,10 @@ export default function StaffDetailModal({ staffId, close, onUpdated }: Props) {
       setSaving(false);
     }
   };
+
+  const onAssigned = (link: Link) => {
+    return setAssignedLinks(prev => [...(prev ?? []), link])
+  }
 
   return (
     <Modal transparent statusBarTranslucent animationType="fade" onRequestClose={close}>
@@ -81,7 +114,36 @@ export default function StaffDetailModal({ staffId, close, onUpdated }: Props) {
           ) : (
             <ScrollView ref={scrollRef} contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
               <InputGroup label="Name">
-                <TextInput value={name} onChangeText={setName} style={styles.input} />
+                <View style={styles.nameRow}>
+                  <TextInput
+                    value={name}
+                    onChangeText={setName}
+                    style={[styles.input, styles.nameInput]}
+                  />
+
+                  <Pressable
+                    style={[
+                      styles.pioneerBadge,
+                      staff.isPioneer && styles.pioneerBadgeActive,
+                    ]}
+                    onPress={() => setValue('isPioneer', true)}
+                    disabled={staff.isPioneer}
+                  >
+                    <Ionicons
+                      name="star"
+                      size={14}
+                      color={staff.isPioneer ? colors.primary : colors.textGrey}
+                    />
+                    <Text
+                      style={[
+                        styles.pioneerBadgeText,
+                        staff.isPioneer && styles.pioneerBadgeTextActive,
+                      ]}
+                    >
+                      {staff.isPioneer ? 'Pioneer' : 'Make Pioneer'}
+                    </Text>
+                  </Pressable>
+                </View>
               </InputGroup>
               <InputGroup label="Email">
                 <TextInput value={email} onChangeText={setEmail} style={styles.input} autoCapitalize="none" />
@@ -126,7 +188,7 @@ export default function StaffDetailModal({ staffId, close, onUpdated }: Props) {
               <View style={styles.divider} />
 
               <InputGroup label="Assigned patients">
-                {loadingAssigned ? (
+                {loadingAssigned || !assignedLinks ? (
                   <ActivityIndicator color={colors.primary} />
                 ) : assignedLinks.length === 0 ? (
                   <Text style={styles.empty}>No patients assigned yet</Text>
@@ -144,8 +206,8 @@ export default function StaffDetailModal({ staffId, close, onUpdated }: Props) {
 
               <AssignPatientSection
                 staffId={staffId}
-                excludeLinkIds={assignedLinks.map((l) => l._id)}
-                onAssigned={loadAssigned}
+                excludeLinkIds={assignedLinks?.map((l) => l._id) ?? []}
+                onAssigned={onAssigned}
                 onSearchFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
 
               />
@@ -353,4 +415,40 @@ const styles = StyleSheet.create({
     color: colors.textGrey,
   },
 
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+
+  nameInput: {
+    flex: 1,
+  },
+
+  pioneerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+  },
+
+  pioneerBadgeActive: {
+    backgroundColor: colors.primary + '15',
+    borderColor: colors.primary,
+  },
+
+  pioneerBadgeText: {
+    fontSize: typography.small,
+    fontWeight: '600',
+    color: colors.textGrey,
+  },
+
+  pioneerBadgeTextActive: {
+    color: colors.primary,
+  },
 });

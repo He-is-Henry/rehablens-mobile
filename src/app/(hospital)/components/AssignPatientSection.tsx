@@ -1,9 +1,10 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
+import { useQuery } from '@/hooks/useQuery';
 import {
   assignStaffToPatient,
   getLinkedPatients
 } from '@/lib/hospital';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -18,28 +19,30 @@ import Toast from 'react-native-toast-message';
 type Props = {
   staffId: string;
   excludeLinkIds: string[];
-  onAssigned(): void;
+  onAssigned(link: Link): void;
   onSearchFocus?(): void;
 }
 
+
+
 export default function AssignPatientSection({ staffId, excludeLinkIds, onAssigned, onSearchFocus }: Props) {
-  const [links, setLinks] = useState<Link[]>([]);
+
+  const hospitalPatientsQuery: Query<Link[]> = {
+    key: '/hospital/patient',
+    fetcher: () => getLinkedPatients(undefined, staffId)
+  }
+
+  const { data: links, loading } = useQuery(hospitalPatientsQuery)
   const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(true);
   const [assigningId, setAssigningId] = useState('');
 
-  useEffect(() => {
-    getLinkedPatients()
-      .then(setLinks)
-      .finally(() => setLoading(false));
-  }, []);
 
   const handleAssign = async (linkId: string) => {
     setAssigningId(linkId);
     try {
-      await assignStaffToPatient(linkId, staffId);
+      const newLink = await assignStaffToPatient(linkId, staffId);
       Toast.show({ type: 'success', text1: 'Patient assigned' });
-      onAssigned();
+      onAssigned(newLink);
     } catch (e: any) {
       Toast.show({ type: 'error', text1: 'Assign failed', text2: e.message });
     } finally {
@@ -47,7 +50,7 @@ export default function AssignPatientSection({ staffId, excludeLinkIds, onAssign
     }
   };
 
-  const results = links.filter((link) => {
+  const results = links?.filter((link) => {
     if (excludeLinkIds.includes(link._id)) return false;
     const q = query.trim().toLowerCase();
     if (!q) return true;
@@ -69,7 +72,7 @@ export default function AssignPatientSection({ staffId, excludeLinkIds, onAssign
         placeholderTextColor={colors.textGrey}
       />
 
-      {loading ? (
+      {loading || !results ? (
         <ActivityIndicator color={colors.primary} style={styles.loader} />
       ) : (
         <ScrollView style={styles.results} nestedScrollEnabled keyboardShouldPersistTaps="handled">

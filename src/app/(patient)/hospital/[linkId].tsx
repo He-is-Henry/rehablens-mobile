@@ -1,4 +1,4 @@
-import AssignmentList from '@/app/(hospital)/components/AssignmentList';
+import AssignmentList from '@/app/(patient)/components/AssignmentList';
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { getPatientHospitalById } from '@/lib/patient';
 import { router, useLocalSearchParams } from 'expo-router';

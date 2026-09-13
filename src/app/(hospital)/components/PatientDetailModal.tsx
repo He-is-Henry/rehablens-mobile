@@ -1,4 +1,5 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
+import { useQuery } from '@/hooks/useQuery';
 import {
   assignStaffToPatient,
   getAllStaff,
@@ -21,35 +22,35 @@ import Toast from 'react-native-toast-message';
 type Props = {
   link: Link;
   close(): void;
-  onUpdated(): void;
+  onUpdated(updatedLink: Link): void;
   onAssignExercise(): void;
 };
 
+
+
 export default function PatientDetailModal({ link, close, onUpdated, onAssignExercise }: Props) {
-  const [staff, setStaff] = useState<User[]>([]);
-  const [loadingStaff, setLoadingStaff] = useState(true);
-  const [togglingVerify, setTogglingVerify] = useState(false);
-  const [assigningId, setAssigningId] = useState('');
   const [currentLink, setCurrentLink] = useState<Link>(link);
-
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loadingAssignments, setLoadingAssignments] = useState(true);
-
-  const patient = currentLink.patientId;
   const currentStaff = currentLink.staffId as User | null;
 
+  const hospitalStaffQuery: Query<User[]> = {
+    key: '/hospital/staff',
+    fetcher: getAllStaff,
+  }
 
-  useEffect(() => {
-    getAllStaff()
-      .then(setStaff)
-      .finally(() => setLoadingStaff(false));
-  }, []);
+  const hospitalAssignmentQuery: Query<Assignment[]> = {
+    key: '/hospital/assignment',
+    fetcher: () => getHospitalAssignments(patient._id),
+  }
+  const { data: staff, loading: loadingStaff } = useQuery(hospitalStaffQuery);
 
-  useEffect(() => {
-    getHospitalAssignments(patient._id)
-      .then(setAssignments)
-      .finally(() => setLoadingAssignments(false));
-  }, [patient._id]);
+  const [togglingVerify, setTogglingVerify] = useState(false);
+  const [assigningId, setAssigningId] = useState('');
+
+  const { data: assignments, loading: loadingAssignments } = useQuery(hospitalAssignmentQuery);
+
+
+  const patient = currentLink.patientId;
+
 
   useEffect(() => {
     console.log(assignments)
@@ -67,7 +68,7 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
         type: 'success',
         text1: updated.verified ? 'Patient verified' : 'Patient unverified',
       });
-      onUpdated();
+      onUpdated(updated);
     } catch (e: any) {
       Toast.show({ type: 'error', text1: 'Failed', text2: e.message });
     } finally {
@@ -81,7 +82,7 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
       const updated = await assignStaffToPatient(currentLink._id, staffId);
       setCurrentLink(updated);
       Toast.show({ type: 'success', text1: 'Staff assigned' });
-      onUpdated();
+      onUpdated(updated);
     } catch (e: any) {
       Toast.show({ type: 'error', text1: 'Failed', text2: e.message });
     } finally {
@@ -172,7 +173,7 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
               <Text style={styles.sectionLabel}>
                 {currentStaff ? 'Reassign to' : 'Assign staff'}
               </Text>
-              {loadingStaff ? (
+              {loadingStaff || !staff ? (
                 <ActivityIndicator color={colors.primary} />
               ) : (
                 <View style={styles.staffList}>
@@ -209,7 +210,7 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
 
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Assignments</Text>
-              {loadingAssignments ? (
+              {loadingAssignments || !assignments ? (
                 <ActivityIndicator color={colors.primary} />
               ) : assignments.length === 0 ? (
                 <Text style={styles.unassigned}>No assignments yet</Text>

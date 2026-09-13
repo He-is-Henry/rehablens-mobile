@@ -14,7 +14,7 @@ import Toast from 'react-native-toast-message';
 
 type Props = {
   close(): void;
-  onLinked(): void;
+  onLinked(linkId: string): void;
 }
 
 export default function LinkPatientModal({ close, onLinked }: Props) {
@@ -51,9 +51,9 @@ export default function LinkPatientModal({ close, onLinked }: Props) {
     if (!selected) return;
     setLinking(true);
     try {
-      await linkPatient(selected._id);
+      const res = await linkPatient(selected._id);
       Toast.show({ type: 'success', text1: 'Patient linked' });
-      onLinked();
+      onLinked(res._id);
       close();
     } catch (e: any) {
       Toast.show({ type: 'error', text1: 'Failed to link', text2: e.message });

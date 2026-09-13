@@ -7,7 +7,7 @@ import Toast from 'react-native-toast-message';
 
 type Props = {
   close(): void;
-  onCreated(): void;
+  onCreated(staff: User): void;
 }
 
 export default function CreateStaffModal({ close, onCreated }: Props) {
@@ -28,7 +28,7 @@ export default function CreateStaffModal({ close, onCreated }: Props) {
     try {
       const res = await createStaff(data);
       Toast.show({ type: 'success', text1: 'User created' });
-      onCreated()
+      onCreated(res)
     } catch (e: any) {
       setErr(e.message)
     } finally {

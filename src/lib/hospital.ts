@@ -26,6 +26,18 @@ export const getAllPatients = async () => {
   }
 };
 
+export const getPatientByLinkId = async (linkId: string) => {
+  try {
+    const res = await api.get(`/hospital/patient/${linkId}`);
+    const data: Link = res.data;
+
+    return data;
+  } catch (e) {
+    const err = e as AxiosError<{ message: string }>;
+    throw new Error(err.response?.data?.message ?? "Something went wrong");
+  }
+};
+
 export const searchHospitals = async (q: string) => {
   try {
     const res = await api.get(`/hospital/search?q=${q}`);
@@ -89,7 +101,9 @@ export const getStaffById = async (id: string) => {
 
 export const updateStaff = async (
   id: string,
-  payload: Partial<Pick<User, "name" | "email" | "role" | "isActive">>,
+  payload: Partial<
+    Pick<User, "name" | "email" | "role" | "isActive" | "isPioneer">
+  >,
 ) => {
   try {
     const res = await api.patch(`/hospital/staff/${id}`, payload);

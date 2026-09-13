@@ -50,7 +50,6 @@
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "postinstall": "node scripts/fix-pose-detection.js",
     "web": "expo start --web",
     "lint": "expo lint"
   },

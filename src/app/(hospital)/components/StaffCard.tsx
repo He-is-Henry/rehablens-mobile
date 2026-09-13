@@ -1,4 +1,5 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 
@@ -6,14 +7,27 @@ type Props = {
   item: User;
 }
 export default function StaffCard({ item }: Props) {
+  console.log(item)
   return <View style={styles.card}>
     <View style={styles.cardLeft}>
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{item.name[0]}</Text>
       </View>
-      <View>
-        <Text style={styles.cardName}>{item.name}</Text>
-        <Text style={styles.cardSub}>{item.customId} · {item.email}</Text>
+      <View style={styles.nameInfo}>
+        <View style={styles.nameRow}>
+          <Text style={styles.cardName}>{item.name}</Text>
+
+          {item.isPioneer && (
+            <View style={styles.pioneerBadge}>
+              <Ionicons name="star" size={12} color={colors.primary} />
+              <Text style={styles.pioneerBadgeText}>Pioneer</Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.cardSub}>
+          {item.customId} · {item.email}
+        </Text>
       </View>
     </View>
     <View style={[styles.pill, item.isActive ? styles.pillActive : styles.pillInactive]}>
@@ -87,5 +101,28 @@ const styles = StyleSheet.create({
   },
   pillTextInactive: {
     color: colors.textGrey,
+  },
+  nameInfo: {
+    flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  pioneerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary + '15',
+  },
+
+  pioneerBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.primary,
   },
 })

@@ -34,8 +34,9 @@ export default function LoginScreen() {
 
     try {
       const res = await login(email, password);
+
       setAuth(res.accessToken, res.refreshToken, res.user);
-      // index.tsx handles redirect based on role
+      // index will handle the redirect based on role
       router.replace('/');
     } catch (err: any) {
       console.log(err)

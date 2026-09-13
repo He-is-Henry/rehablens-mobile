@@ -1,7 +1,8 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
-import { getAllPatients, getAllStaff } from '@/lib/hospital';
-import { useEffect, useState } from 'react';
+import { useQuery } from '@/hooks/useQuery';
+import { getAllPatients, getAllStaff, getPatientByLinkId } from '@/lib/hospital';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -14,38 +15,44 @@ import LinkPatientModal from '../components/LinkPatientModal';
 import PatientList from '../components/PatientList';
 import StaffList from '../components/StaffList';
 
+const hospitalPatientsQuery: Query<Link[]> = {
+  key: '/hospital/patient',
+  fetcher: getAllPatients,
+}
+
+const hospitalStaffQuery: Query<User[]> = {
+  key: '/hospital/staff',
+  fetcher: getAllStaff,
+}
+
 const TABS = ['Staff', 'Patients'] as const;
 type Tab = typeof TABS[number];
 
 export default function HospitalDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('Staff');
-  const [staff, setStaff] = useState<User[]>([]);
-  const [patients, setPatients] = useState<Link[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const { data: staff, setData: setStaff, loading: staffLoading, refreshData: refreshStaff } = useQuery(hospitalStaffQuery);
+
+  const { data: patients, setData: setPatients, loading: patientsLoading, refreshData: refreshPatients } = useQuery(hospitalPatientsQuery);
 
   const [showNewStaffModal, setShowNewstaffModal] = useState(false)
   const [showLinkPatientModal, setShowLinkPatientModal] = useState(false)
 
   const hospital = user?.hospitalId as any;
-  const loadData = async () => {
-    try {
-      const [allStaff, allPatients] = await Promise.all([
-        getAllStaff(),
-        getAllPatients(),
-      ]);
-      setStaff(allStaff || []);
-      setPatients(allPatients || []);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
 
+  const loading = patientsLoading && staffLoading;
+
+  const addNewPatient = async (newPatientId: string) => {
+    const patientLink = await getPatientByLinkId(newPatientId)
+
+    setPatients((prev) => [...(prev ?? []), patientLink])
+  }
+
+  const addNewStaff = (staffLink: User) => {
+    setStaff((prev) => [...(prev ?? []), staffLink])
+  }
 
   return (
     <View style={styles.container}>
@@ -84,13 +91,13 @@ export default function HospitalDashboard() {
         showNewStaffModal && <CreateStaffModal close={() => {
           setShowNewstaffModal(false)
         }}
-          onCreated={loadData} />
+          onCreated={addNewStaff} />
       }
 
       {
         showLinkPatientModal && <LinkPatientModal close={() => {
           setShowLinkPatientModal(false)
-        }} onLinked={loadData} />
+        }} onLinked={addNewPatient} />
       }
 
       {/* List */}
@@ -99,9 +106,9 @@ export default function HospitalDashboard() {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : activeTab === 'Staff' ? (
-        <StaffList staff={staff} loadData={loadData} />
+        <StaffList staff={staff ?? []} loadData={refreshStaff} setStaff={setStaff} />
       ) : (
-        <PatientList patients={patients} loadData={loadData} />
+        <PatientList patients={patients ?? []} loadData={refreshPatients} setPatient={setPatients} />
       )}
 
       {/* FAB */}

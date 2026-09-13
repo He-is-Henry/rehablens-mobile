@@ -26,7 +26,10 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.olanrewajubasit.rehablens",
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     },
     "web": {
       "output": "static",
@@ -34,6 +37,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
@@ -49,7 +53,8 @@
           "cameraPermissionText": "RehabLens needs camera access to track your exercise form in real time.",
           "enableCodeScanner": false
         }
-      ]
+      ],
+      "./plugins/withPoseDetectionFix.js"
     ],
     "experiments": {
       "typedRoutes": true,

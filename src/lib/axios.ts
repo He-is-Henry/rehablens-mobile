@@ -1,4 +1,5 @@
 import { config } from "@/config";
+import NetInfo from "@react-native-community/netinfo";
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -28,6 +29,12 @@ const processQueue = (error: unknown, accessToken?: string) => {
   queue = [];
 };
 
+const isNetworkAvailable = async () => {
+  const state = await NetInfo.fetch();
+
+  return !!(state.isConnected && state.isInternetReachable !== false);
+};
+
 export const api: AxiosInstance = axios.create({
   baseURL: config.baseUrl,
   timeout: 10000,
@@ -38,6 +45,13 @@ export const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    const online = await isNetworkAvailable();
+
+    if (!online) {
+      return Promise.reject(
+        new AxiosError("No internet connection", "ERR_NETWORK"),
+      );
+    }
     const accessToken = await token.getAccess();
 
     if (accessToken && config.headers) {

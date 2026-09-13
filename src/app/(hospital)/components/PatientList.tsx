@@ -9,20 +9,25 @@ import PatientDetailModal from "./PatientDetailModal"
 
 type Props = {
   patients: Link[]
-  loadData(): void
+  loadData(): void,
+  setPatient: (newData: NewData<Link[]>) => Link[]
 }
 
-export default function PatientList({ patients, loadData }: Props) {
+export default function PatientList({ patients, loadData, setPatient }: Props) {
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
   const [assignTarget, setAssignTarget] = useState<Link | null>(null);
   const { refreshing, onRefreshControl } = useRefresh(loadData);
+
+  const updatePatient = (updatedPatient: Link) => {
+    setPatient(prev => [...(prev?.filter(p => p._id !== updatedPatient._id)) ?? [], updatedPatient]);
+  }
 
   return <>
     {selectedLink && (
       <PatientDetailModal
         link={selectedLink}
         close={() => setSelectedLink(null)}
-        onUpdated={loadData}
+        onUpdated={updatePatient}
         onAssignExercise={() => {
           setAssignTarget(selectedLink);
           setSelectedLink(null);

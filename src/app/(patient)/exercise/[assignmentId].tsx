@@ -1,6 +1,6 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
+import { useAuth } from '@/context/auth.context';
 import { createSessionResult, getPatientAssignmentById } from '@/lib/patient';
-import storage from '@/lib/storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Camera as PoseCamera } from '@scottjgilroy/react-native-vision-camera-v4-pose-detection';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -248,6 +248,8 @@ export default function ExerciseScreen() {
   const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loadingAssignment, setLoadingAssignment] = useState(true);
+  const { requireStorage } = useAuth();
+  const storage = requireStorage()
 
 
 
@@ -338,7 +340,10 @@ export default function ExerciseScreen() {
 
   useEffect(() => {
     storage.get('speechEnabled').then((val) => {
-      if (val !== undefined) setSpeechEnabled(val);
+      if (val) {
+        const { data } = val
+        if (typeof data === 'boolean') setSpeechEnabled(data);
+      }
     });
   }, []);
 
@@ -365,6 +370,7 @@ export default function ExerciseScreen() {
   useEffect(() => {
     return () => { Speech.stop(); };
   }, []);
+
 
   if (loadingAssignment) {
     return (

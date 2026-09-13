@@ -42,9 +42,14 @@ interface AuthContextType {
   user: User | null;
   sessions: Session[];
   loading: boolean;
-  setAuth: (accessToken: string, refreshToken: string, userData: User) => void;
+  setAuth: (
+    accessToken: string,
+    refreshToken: string,
+    userData: User,
+  ) => Promise<void>;
   setUserData: (userData: User) => void;
   setSessionsData: (sessionsData: Session[]) => void;
   clearAuth: () => void;
   editProfile: (payload: EditProfilePayload) => Promise<User>;
+  requireStorage: () => UserStorage;
 }

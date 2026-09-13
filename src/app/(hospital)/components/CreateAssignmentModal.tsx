@@ -1,8 +1,9 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
+import { useQuery } from '@/hooks/useQuery';
 import { getExercises } from '@/lib/exercise';
 import { createAssignment as createHospitalAssignment } from '@/lib/hospital';
 import { createAssignment as createStaffAssignment } from '@/lib/staff';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -23,9 +24,14 @@ type Props = {
   isPatient?: boolean
 };
 
+const exerciseQuery: Query<Exercise[]> = {
+  key: '/exercise',
+  fetcher: getExercises
+}
+
 export default function CreateAssignmentModal({ patientId, patientName, close, onCreated, isPatient }: Props) {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [loadingExercises, setLoadingExercises] = useState(true);
+
+  const { data: exercises, loading: loadingExercises } = useQuery(exerciseQuery)
   const [selected, setSelected] = useState<Exercise | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -35,13 +41,6 @@ export default function CreateAssignmentModal({ patientId, patientName, close, o
   const [submitting, setSubmitting] = useState(false);
 
   const createAssignment = isPatient ? createStaffAssignment : createHospitalAssignment
-
-  useEffect(() => {
-    getExercises()
-      .then(setExercises)
-      .catch((e) => Toast.show({ type: 'error', text1: 'Failed to load exercises', text2: e.message }))
-      .finally(() => setLoadingExercises(false));
-  }, []);
 
   const handleSubmit = async () => {
     if (!selected) {
@@ -86,7 +85,7 @@ export default function CreateAssignmentModal({ patientId, patientName, close, o
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
             <Text style={styles.label}>Exercise</Text>
-            {loadingExercises ? (
+            {loadingExercises || !exercises ? (
               <ActivityIndicator color={colors.primary} />
             ) : (
               <View style={styles.exerciseList}>

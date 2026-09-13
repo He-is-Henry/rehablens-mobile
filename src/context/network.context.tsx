@@ -1,5 +1,6 @@
 import NetInfo from '@react-native-community/netinfo';
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import * as Notifications from 'expo-notifications';
+import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
 
 type NetworkContextType = {
   isOnline: boolean;
@@ -12,16 +13,52 @@ const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
 export const NetworkProvider = ({ children }: { children: ReactNode }) => {
   const [isOnline, setIsOnline] = useState(true);
   const [isChecking, setIsChecking] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevOnlineRef = useRef(true);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
-      // isConnected can be true while isInternetReachable is unknown/false —
-      // treat "online" as actually reachable, not just connected to a network
       const online = !!(state.isConnected && state.isInternetReachable !== false);
-      setIsOnline(online);
+
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+
+      debounceRef.current = setTimeout(() => {
+        setIsOnline(online);
+
+        // don't notify on first load, only on actual changes
+        if (!initializedRef.current) {
+          initializedRef.current = true;
+          prevOnlineRef.current = online;
+          return;
+        }
+
+        if (online && !prevOnlineRef.current) {
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Back online',
+              body: 'Your connection has been restored.',
+            },
+            trigger: null,
+          });
+        } else if (!online && prevOnlineRef.current) {
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'You\'re offline',
+              body: 'Showing cached data. Changes will sync when you reconnect.',
+            },
+            trigger: null,
+          });
+        }
+
+        prevOnlineRef.current = online;
+      }, 3000); // 3 second debounce — ignores flaky connection blips
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, []);
 
   const recheck = async () => {
@@ -40,7 +77,7 @@ export const NetworkProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </NetworkContext.Provider>
   );
-}; 3
+};
 
 export const useNetwork = () => {
   const context = useContext(NetworkContext);

@@ -8,19 +8,25 @@ import StaffDetailModal from "./StaffDetailsModal"
 
 type Props = {
   staff: User[],
-  loadData(): void
+  loadData(): void,
+  setStaff: (newData: NewData<User[]>) => User[]
 }
 
-export default function StaffList({ staff, loadData }: Props) {
+export default function StaffList({ staff, loadData, setStaff }: Props) {
   const [selectedId, setSelectedId] = useState('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const { refreshing, onRefreshControl } = useRefresh(loadData);
 
+
+  const updateStaff = (updatedStaff: User) => {
+    setStaff(prev => [...(prev?.filter(p => p._id !== updatedStaff._id)) ?? [], updatedStaff]);
+  }
+
   return (
     <View style={styles.container}>
       {
-        showDetailsModal && <StaffDetailModal staffId={selectedId} close={() => setShowDetailsModal(false)} onUpdated={loadData} />
+        showDetailsModal && <StaffDetailModal staffId={selectedId} close={() => setShowDetailsModal(false)} onUpdated={updateStaff} />
       }
 
       <FlatList
