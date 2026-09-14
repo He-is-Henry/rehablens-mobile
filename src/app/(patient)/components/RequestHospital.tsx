@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-type Props = { close(): void; onRequested(): void };
+type Props = { close(): void; onRequested(newHospital: Link): void };
 
 export default function RequestHospitalModal({ close, onRequested }: Props) {
   const [query, setQuery] = useState('');
@@ -39,9 +39,9 @@ export default function RequestHospitalModal({ close, onRequested }: Props) {
     if (!selected) return;
     setSubmitting(true);
     try {
-      await requestHospitalLink(selected._id);
+      const res = await requestHospitalLink(selected._id);
       Toast.show({ type: 'success', text1: 'Request sent', text2: 'Waiting on hospital confirmation' });
-      onRequested();
+      onRequested(res);
       close();
     } catch (e: any) {
       Toast.show({ type: 'error', text1: 'Request failed', text2: e.message });

@@ -1,15 +1,21 @@
 import AssignmentSessionsView from '@/components/AssignmentSessionsView';
 import { colors, radius, spacing, typography } from '@/constants/theme';
-import { getPatientAssignmentById, getPatientSessionResultsByAssignment } from '@/lib/patient';
+import { usePatientQuery } from '@/queries/patient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PatientAssignmentDetail() {
   const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
   const insets = useSafeAreaInsets();
-  const [assignment, setAssignment] = useState<Assignment | null>(null);
+
+  const assignmentQuery =
+    usePatientQuery.assignmentById(assignmentId);
+
+  const sessionsQuery =
+    usePatientQuery.sessionResults(assignmentId);
+
+  const assignment = assignmentQuery.data;
 
   const handleStart = () => {
     Alert.alert(
@@ -35,11 +41,9 @@ export default function PatientAssignmentDetail() {
       </View>
 
       <AssignmentSessionsView
-        fetchAssignment={() => getPatientAssignmentById(assignmentId).then((a) => {
-          setAssignment(a);
-          return a;
-        })}
-        fetchSessions={() => getPatientSessionResultsByAssignment(assignmentId)}
+        assignment={assignmentQuery.data}
+        sessions={sessionsQuery.data ?? []}
+        loading={assignmentQuery.loading || sessionsQuery.loading}
       />
 
       {assignment?.status === 'active' && (

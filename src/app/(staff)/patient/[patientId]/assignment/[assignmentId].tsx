@@ -1,6 +1,6 @@
 import AssignmentSessionsView from '@/components/AssignmentSessionsView';
 import { colors, spacing } from '@/constants/theme';
-import { getStaffPatientAssignmentById, getStaffSessionResults } from '@/lib/staff';
+import { useStaffQuery } from '@/queries/staff';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,13 +9,10 @@ export default function StaffAssignmentScreen() {
   const { assignmentId, patientId } = useLocalSearchParams<{ assignmentId: string, patientId: string }>();
   const insets = useSafeAreaInsets();
 
-  const returnAssignment = async () => {
-    return getStaffPatientAssignmentById(assignmentId);
-  }
+  const assignment = useStaffQuery.patientAssignmentById(assignmentId);
 
-  const returnSesions = async () => {
-    return getStaffSessionResults(assignmentId)
-  }
+  const sessions = useStaffQuery.assignmentSessionResults(assignmentId)
+
 
   return (
     <View style={styles.container}>
@@ -27,8 +24,9 @@ export default function StaffAssignmentScreen() {
         <View style={{ width: 48 }} />
       </View>
       <AssignmentSessionsView
-        fetchAssignment={returnAssignment}
-        fetchSessions={returnSesions}
+        assignment={assignment.data}
+        sessions={sessions.data ?? []}
+        loading={sessions.loading || assignment.loading}
       />
 
     </View>

@@ -20,9 +20,6 @@ Notifications.setNotificationHandler({
 });
 
 export default function RootLayout() {
-  console.log('ROOT LAYOUT MOUNTED');
-
-
   useEffect(() => {
     const setupNotifications = async () => {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();

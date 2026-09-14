@@ -1,6 +1,7 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
-import { createSessionResult, getPatientAssignmentById } from '@/lib/patient';
+import { createSessionResult } from '@/lib/patient';
+import { usePatientQuery } from '@/queries/patient';
 import { Ionicons } from '@expo/vector-icons';
 import { Camera as PoseCamera } from '@scottjgilroy/react-native-vision-camera-v4-pose-detection';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -246,8 +247,7 @@ function PhaseRow({
 
 export default function ExerciseScreen() {
   const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
-  const [assignment, setAssignment] = useState<Assignment | null>(null);
-  const [loadingAssignment, setLoadingAssignment] = useState(true);
+  const { data: assignment, loading: loadingAssignment, } = usePatientQuery.assignmentById(assignmentId);
   const { requireStorage } = useAuth();
   const storage = requireStorage()
 
@@ -291,13 +291,6 @@ export default function ExerciseScreen() {
   const targetReps = assignment?.customReps ?? exercise?.targetReps!;
   const holdSeconds = assignment?.customHoldSeconds ?? exercise?.holdSeconds!;
 
-
-  useEffect(() => {
-    console.log(assignmentId)
-    getPatientAssignmentById(assignmentId)
-      .then(setAssignment)
-      .finally(() => setLoadingAssignment(false));
-  }, [assignmentId]);
 
   useEffect(() => {
     if (!hasPermission) requestPermission();

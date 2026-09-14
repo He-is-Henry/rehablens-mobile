@@ -52,4 +52,5 @@ interface AuthContextType {
   clearAuth: () => void;
   editProfile: (payload: EditProfilePayload) => Promise<User>;
   requireStorage: () => UserStorage;
+  fetchCurrentUser: () => Promise<void>;
 }

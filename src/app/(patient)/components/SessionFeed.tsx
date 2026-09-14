@@ -1,39 +1,20 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useRefresh } from '@/hooks/useRefresh';
-import { getPatientSessionResults } from '@/lib/patient';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { usePatientQuery } from '@/queries/patient';
+import { router } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 export default function SessionFeed() {
-  const [sessions, setSessions] = useState<PopulatedSessionResult[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadSessions = async () => {
-    try {
-      const data = await getPatientSessionResults();
-      setSessions(data);
-    } catch (e) {
-      console.log(e)
-    } finally {
-      setLoading(false)
-    }
-
-  }
+  const { data: sessions, loading, refreshData: loadSessions } = usePatientQuery.allSessionResults();
 
   const { refreshing, onRefreshControl } = useRefresh(loadSessions)
 
-  useFocusEffect(
-    useCallback(() => {
-      loadSessions()
-    }, [])
-  );
 
   if (loading) {
     return <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />;
   }
 
-  if (sessions.length === 0) {
+  if (sessions?.length === 0) {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyText}>No exercise sessions yet</Text>

@@ -1,9 +1,9 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
 import { useRefresh } from '@/hooks/useRefresh';
-import { getPatientHospitals } from '@/lib/patient';
+import { usePatientQuery } from '@/queries/patient';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,26 +19,16 @@ import RequestHospitalModal from '../components/RequestHospital';
 export default function PatientDashboard() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const [links, setLinks] = useState<Link[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: links, loading, refreshData, setData: setLinks } = usePatientQuery.hospitals()
   const [modalVisible, setModalVisible] = useState(false);
 
-  const loadPatientHospitals = async () => {
-    try {
-      const data: Link[] = await getPatientHospitals();
-      setLinks(data);
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    loadPatientHospitals();
-  }, []);
+  const { refreshing, onRefreshControl } = useRefresh(refreshData);
 
-  const { refreshing, onRefreshControl } = useRefresh(loadPatientHospitals);
+
+  const addNewHospital = async (newLink: Link) => {
+    setLinks((p) => [...(p ?? []), newLink])
+  }
 
   return (
     <View style={styles.container}>
@@ -170,7 +160,7 @@ export default function PatientDashboard() {
       {modalVisible && (
         <RequestHospitalModal
           close={() => setModalVisible(false)}
-          onRequested={loadPatientHospitals}
+          onRequested={addNewHospital}
         />
       )}
     </View>

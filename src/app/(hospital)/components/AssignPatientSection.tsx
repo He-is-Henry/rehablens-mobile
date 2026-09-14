@@ -1,9 +1,8 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
-import { useQuery } from '@/hooks/useQuery';
 import {
-  assignStaffToPatient,
-  getLinkedPatients
+  assignStaffToPatient
 } from '@/lib/hospital';
+import { useHospitalQuery } from '@/queries/hospital';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -27,12 +26,7 @@ type Props = {
 
 export default function AssignPatientSection({ staffId, excludeLinkIds, onAssigned, onSearchFocus }: Props) {
 
-  const hospitalPatientsQuery: Query<Link[]> = {
-    key: '/hospital/patient',
-    fetcher: () => getLinkedPatients(undefined, staffId)
-  }
-
-  const { data: links, loading } = useQuery(hospitalPatientsQuery)
+  const { data: links, loading } = useHospitalQuery.linkedPatients(staffId)
   const [query, setQuery] = useState('');
   const [assigningId, setAssigningId] = useState('');
 

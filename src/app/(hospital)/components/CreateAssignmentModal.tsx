@@ -1,8 +1,7 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
-import { useQuery } from '@/hooks/useQuery';
-import { getExercises } from '@/lib/exercise';
 import { createAssignment as createHospitalAssignment } from '@/lib/hospital';
 import { createAssignment as createStaffAssignment } from '@/lib/staff';
+import { useExerciseQuery } from '@/queries/exercise';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,14 +23,9 @@ type Props = {
   isPatient?: boolean
 };
 
-const exerciseQuery: Query<Exercise[]> = {
-  key: '/exercise',
-  fetcher: getExercises
-}
-
 export default function CreateAssignmentModal({ patientId, patientName, close, onCreated, isPatient }: Props) {
 
-  const { data: exercises, loading: loadingExercises } = useQuery(exerciseQuery)
+  const { data: exercises, loading: loadingExercises } = useExerciseQuery.getExercises();
   const [selected, setSelected] = useState<Exercise | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 

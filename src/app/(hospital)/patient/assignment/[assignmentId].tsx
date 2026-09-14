@@ -1,6 +1,6 @@
 import AssignmentSessionsView from '@/components/AssignmentSessionsView';
 import { colors, spacing } from '@/constants/theme';
-import { getHospitalAssignmentById, getHospitalSessionResults } from '@/lib/hospital';
+import { useHospitalQuery } from '@/queries/hospital';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function HospitalAssignmentScreen() {
   const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
   const insets = useSafeAreaInsets();
+
+  const assignment = useHospitalQuery.assignmentById(assignmentId);
+  const sessionResults = useHospitalQuery.sessionResults(assignmentId);
 
   return (
     <View style={styles.container}>
@@ -19,8 +22,9 @@ export default function HospitalAssignmentScreen() {
         <View style={{ width: 48 }} />
       </View>
       <AssignmentSessionsView
-        fetchAssignment={() => getHospitalAssignmentById(assignmentId)}
-        fetchSessions={() => getHospitalSessionResults(assignmentId)}
+        assignment={assignment.data}
+        sessions={sessionResults.data ?? []}
+        loading={sessionResults.loading || assignment.loading}
       />
     </View>
   );

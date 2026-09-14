@@ -1,13 +1,15 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
+import { useRefresh } from '@/hooks/useRefresh';
 import { changePassword, logout, revokeAllSessions, revokeSession } from '@/lib/auth';
 import { Ionicons } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { ReactNode, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,7 +25,7 @@ type Props = {
 };
 
 export default function SharedProfile({ extra }: Props) {
-  const { user, clearAuth, sessions, setSessionsData, editProfile } = useAuth();
+  const { user, clearAuth, sessions, setSessionsData, editProfile, fetchCurrentUser } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [loggingOut, setLoggingOut] = useState(false);
@@ -50,6 +52,9 @@ export default function SharedProfile({ extra }: Props) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const { refreshing, onRefreshControl } = useRefresh(fetchCurrentUser)
+
 
   const roleLabel: Record<string, string> = {
     hospital_admin: 'Hospital Administrator',
@@ -141,7 +146,7 @@ export default function SharedProfile({ extra }: Props) {
 
   return (
     <>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefreshControl} />}>
         {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
           <View style={styles.avatar}>
@@ -180,7 +185,7 @@ export default function SharedProfile({ extra }: Props) {
               </Text>
             </Pressable>
 
-            {__DEV__ && (
+            {/* {__DEV__ && (
               <>
                 <Divider />
                 <Link
@@ -200,7 +205,17 @@ export default function SharedProfile({ extra }: Props) {
                   </Pressable>
                 </Link>
               </>
-            )}
+            )} */}
+
+            <Pressable
+              style={styles.infoRow}
+              onPress={() => router.push("/reminders")}
+            >
+              <Text style={styles.infoLabel}>Reminders</Text>
+              <Text style={[styles.infoValue, { color: colors.primary }]}>
+                Manage reminders →
+              </Text>
+            </Pressable>
           </View>
         </View>
 

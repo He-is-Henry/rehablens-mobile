@@ -83,6 +83,55 @@ export const AuthProvider = ({ children }: Props) => {
   /**
    * Restore cached user/session data and fetch fresh profile data.
    */
+
+  const fetchCurrentUser = async () => {
+    if (!userStorage) throw Error('No storage available')
+
+    const cachedUser =
+      await userStorage.get<User>("user");
+
+    const cachedSessions =
+      await userStorage.get<Session[]>("sessions");
+
+
+    if (cachedUser) {
+      setUser(cachedUser.data);
+      setSessions(cachedSessions?.data ?? []);
+      setLoading(false);
+    }
+
+    try {
+
+      const res = await api.get("auth/profile");
+      const profileRes: ProfileRes = res.data;
+
+      setUser(profileRes.user);
+
+      await userStorage.set(
+        "user",
+        profileRes.user
+      );
+
+      setSessions(profileRes.sessions);
+
+      await userStorage.set(
+        "sessions",
+        profileRes.sessions
+      );
+
+    } catch (err) {
+      console.error(
+        "AUTH PROFILE: fetch failed:",
+        err
+      );
+    } finally {
+      if (!cachedUser) {
+        setLoading(false);
+      }
+    }
+  };
+
+
   useEffect(() => {
 
 
@@ -97,51 +146,7 @@ export const AuthProvider = ({ children }: Props) => {
     initialized.current = true;
 
 
-    const fetchCurrentUser = async () => {
-      const cachedUser =
-        await userStorage.get<User>("user");
 
-      const cachedSessions =
-        await userStorage.get<Session[]>("sessions");
-
-
-      if (cachedUser) {
-        setUser(cachedUser.data);
-        setSessions(cachedSessions?.data ?? []);
-        setLoading(false);
-      }
-
-      try {
-
-        const res = await api.get("auth/profile");
-
-        const profileRes: ProfileRes = res.data;
-
-        setUser(profileRes.user);
-
-        await userStorage.set(
-          "user",
-          profileRes.user
-        );
-
-        setSessions(profileRes.sessions);
-
-        await userStorage.set(
-          "sessions",
-          profileRes.sessions
-        );
-
-      } catch (err) {
-        console.error(
-          "AUTH PROFILE: fetch failed:",
-          err
-        );
-      } finally {
-        if (!cachedUser) {
-          setLoading(false);
-        }
-      }
-    };
 
     fetchCurrentUser();
   }, [activeUserId]);
@@ -207,17 +212,17 @@ export const AuthProvider = ({ children }: Props) => {
     if (userStorage) {
       await userStorage.clear("user");
       await userStorage.clear("sessions");
+      await userStorage.deleteAll()
     }
 
-    await globalStorage.deleteAll([
-      "rehablens:user",
-    ]);
+    router.replace('/login')
 
     setUser(null);
     setSessions([]);
     setActiveUserId(null);
 
     initialized.current = false;
+
   };
 
   /**
@@ -283,6 +288,7 @@ export const AuthProvider = ({ children }: Props) => {
         clearAuth,
         editProfile,
         requireStorage,
+        fetchCurrentUser
       }}
     >
       {children}

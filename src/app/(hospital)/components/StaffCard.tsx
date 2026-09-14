@@ -7,7 +7,6 @@ type Props = {
   item: User;
 }
 export default function StaffCard({ item }: Props) {
-  console.log(item)
   return <View style={styles.card}>
     <View style={styles.cardLeft}>
       <View style={styles.avatar}>

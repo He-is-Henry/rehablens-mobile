@@ -1,8 +1,8 @@
 import CreateAssignmentModal from '@/app/(hospital)/components/CreateAssignmentModal';
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
-import { getStaffPatients } from '@/lib/staff';
-import { useEffect, useState } from 'react';
+import { useStaffQuery } from '@/queries/staff';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -17,29 +17,13 @@ import PatientDetailModal from '../components/PatientDetailModal';
 export default function StaffDashboard() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const [links, setLinks] = useState<Link[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: links, loading, refreshData: loadData } = useStaffQuery.patients()
 
   const [selected, setSelected] = useState<Link | null>(null);
   const [assignTarget, setAssignTarget] = useState<Link | null>(null);
 
   const hospital = user?.hospitalId as any;
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const data = await getStaffPatients();
-      setLinks(data);
-    } catch (error) {
-      console.error('Failed to load staff patients:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   return (
     <View style={styles.container}>
@@ -77,7 +61,7 @@ export default function StaffDashboard() {
       </View>
 
       {/* List */}
-      {loading ? (
+      {loading || !links ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>

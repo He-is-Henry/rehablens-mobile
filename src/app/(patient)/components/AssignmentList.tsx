@@ -1,8 +1,7 @@
 import AssignmentCard from '@/components/AssignmentCard';
 import { colors, spacing, typography } from '@/constants/theme';
-import { getPatientAssignments } from '@/lib/patient';
+import { usePatientQuery } from '@/queries/patient';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
 type Props = {
@@ -10,20 +9,13 @@ type Props = {
 };
 
 export default function AssignmentList({ hospitalId }: Props) {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getPatientAssignments(hospitalId, 'active',)
-      .then(setAssignments)
-      .finally(() => setLoading(false));
-  }, [hospitalId]);
+  const { data: assignments, loading } = usePatientQuery.assignments();
 
   if (loading) {
     return <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />;
   }
 
-  if (assignments.length === 0) {
+  if (assignments?.length === 0) {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyText}>No exercises assigned yet</Text>

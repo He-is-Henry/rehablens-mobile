@@ -1,8 +1,15 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
-import { getStaffPatientAssignments } from '@/lib/staff';
+import { useStaffQuery } from '@/queries/staff';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native';
 
 type Props = {
   link: Link;
@@ -13,14 +20,7 @@ type Props = {
 export default function PatientDetailModal({ link, close, onAssignExercise }: Props) {
   const patient = link.patientId;
 
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loadingAssignments, setLoadingAssignments] = useState(true);
-
-  useEffect(() => {
-    getStaffPatientAssignments(link._id)
-      .then(setAssignments)
-      .finally(() => setLoadingAssignments(false));
-  }, [link._id]);
+  const { data: assignments, loading: loadingAssignments } = useStaffQuery.patientAssignments(link._id)
 
   return (
     <Modal transparent statusBarTranslucent animationType="fade" onRequestClose={close}>
@@ -66,7 +66,7 @@ export default function PatientDetailModal({ link, close, onAssignExercise }: Pr
 
             <View style={{ gap: spacing.sm }}>
               <Text style={styles.sectionLabel}>Assignments</Text>
-              {loadingAssignments ? (
+              {loadingAssignments || !assignments ? (
                 <ActivityIndicator color={colors.primary} />
               ) : assignments.length === 0 ? (
                 <Text style={styles.empty}>No assignments yet</Text>

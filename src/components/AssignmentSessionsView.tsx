@@ -1,5 +1,4 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
-import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -9,23 +8,12 @@ import {
 } from 'react-native';
 
 type Props = {
-  fetchAssignment: () => Promise<Assignment>;
-  fetchSessions: () => Promise<SessionResult[]>;
+  assignment: Assignment | null;
+  sessions: SessionResult[];
+  loading: boolean;
 };
 
-export default function AssignmentSessionsView({ fetchAssignment, fetchSessions }: Props) {
-  const [assignment, setAssignment] = useState<Assignment | null>(null);
-  const [sessions, setSessions] = useState<SessionResult[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    Promise.all([fetchAssignment(), fetchSessions()])
-      .then(([a, s]) => {
-        setAssignment(a);
-        setSessions(s ?? []);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+export default function AssignmentSessionsView({ assignment, sessions, loading }: Props) {
 
   if (loading) {
     return (

@@ -1,11 +1,9 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
-import { useQuery } from '@/hooks/useQuery';
 import {
   assignStaffToPatient,
-  getAllStaff,
-  getHospitalAssignments,
-  togglePatientVerification,
+  togglePatientVerification
 } from '@/lib/hospital';
+import { useHospitalQuery } from '@/queries/hospital';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -32,25 +30,14 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
   const [currentLink, setCurrentLink] = useState<Link>(link);
   const currentStaff = currentLink.staffId as User | null;
 
-  const hospitalStaffQuery: Query<User[]> = {
-    key: '/hospital/staff',
-    fetcher: getAllStaff,
-  }
-
-  const hospitalAssignmentQuery: Query<Assignment[]> = {
-    key: '/hospital/assignment',
-    fetcher: () => getHospitalAssignments(patient._id),
-  }
-  const { data: staff, loading: loadingStaff } = useQuery(hospitalStaffQuery);
+  const { data: staff, loading: loadingStaff } = useHospitalQuery.staff();
 
   const [togglingVerify, setTogglingVerify] = useState(false);
   const [assigningId, setAssigningId] = useState('');
 
-  const { data: assignments, loading: loadingAssignments } = useQuery(hospitalAssignmentQuery);
-
-
   const patient = currentLink.patientId;
 
+  const { data: assignments, loading: loadingAssignments } = useHospitalQuery.assignments(patient._id);
 
   useEffect(() => {
     console.log(assignments)

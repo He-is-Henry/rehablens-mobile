@@ -1,7 +1,7 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
-import { useQuery } from '@/hooks/useQuery';
-import { getAllPatients, getAllStaff, getPatientByLinkId } from '@/lib/hospital';
+import { getPatientByLinkId } from '@/lib/hospital';
+import { useHospitalQuery } from '@/queries/hospital';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,16 +15,6 @@ import LinkPatientModal from '../components/LinkPatientModal';
 import PatientList from '../components/PatientList';
 import StaffList from '../components/StaffList';
 
-const hospitalPatientsQuery: Query<Link[]> = {
-  key: '/hospital/patient',
-  fetcher: getAllPatients,
-}
-
-const hospitalStaffQuery: Query<User[]> = {
-  key: '/hospital/staff',
-  fetcher: getAllStaff,
-}
-
 const TABS = ['Staff', 'Patients'] as const;
 type Tab = typeof TABS[number];
 
@@ -32,9 +22,9 @@ export default function HospitalDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('Staff');
 
-  const { data: staff, setData: setStaff, loading: staffLoading, refreshData: refreshStaff } = useQuery(hospitalStaffQuery);
+  const { data: staff, setData: setStaff, loading: staffLoading, refreshData: refreshStaff } = useHospitalQuery.staff();
 
-  const { data: patients, setData: setPatients, loading: patientsLoading, refreshData: refreshPatients } = useQuery(hospitalPatientsQuery);
+  const { data: patients, setData: setPatients, loading: patientsLoading, refreshData: refreshPatients } = useHospitalQuery.patients();
 
   const [showNewStaffModal, setShowNewstaffModal] = useState(false)
   const [showLinkPatientModal, setShowLinkPatientModal] = useState(false)

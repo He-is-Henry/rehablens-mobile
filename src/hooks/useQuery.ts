@@ -1,5 +1,6 @@
 import { useAuth } from "@/context/auth.context";
 import { useNetwork } from "@/context/network.context";
+import createStorage from "@/lib/storage";
 import { useEffect, useState } from "react";
 import Toast from "react-native-toast-message";
 
@@ -7,13 +8,13 @@ export function useQuery<T extends object>({ key, fetcher }: Query<T>) {
   const [loading, setLoading] = useState<boolean>(true);
   const [data, setData] = useState<T | null>(null);
 
-  const { requireStorage } = useAuth();
+  const { requireStorage, user } = useAuth();
   const { isOnline } = useNetwork();
-
-  const storage = requireStorage();
 
   const getCachedData = async () => {
     console.log("Getting cached data...");
+    const storage = requireStorage();
+
     const cachedData = await storage.get<T>(key);
 
     if (cachedData) {
@@ -23,7 +24,10 @@ export function useQuery<T extends object>({ key, fetcher }: Query<T>) {
     }
   };
 
-  const setCachedData = async (data: T) => await storage.set(key, data);
+  const setCachedData = async (data: T) => {
+    const storage = requireStorage();
+    await storage.set(key, data);
+  };
 
   const updateData = (newData: NewData<T>): T => {
     console.log("Updating cache");
@@ -65,9 +69,24 @@ export function useQuery<T extends object>({ key, fetcher }: Query<T>) {
   };
 
   useEffect(() => {
-    getCachedData();
-    getFreshData();
-  }, [isOnline]);
+    if (!user) {
+      const globalStorage = createStorage();
+      setLoading(false);
+      return;
+    }
+
+    const runQuery = async () => {
+      await getCachedData();
+
+      if (isOnline) {
+        await getFreshData();
+      } else {
+        setLoading(false);
+      }
+    };
+
+    runQuery();
+  }, [isOnline, user]);
 
   return {
     data,

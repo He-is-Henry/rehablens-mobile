@@ -1,29 +1,10 @@
-import { AxiosError } from "axios";
-import { api } from "./axios";
+import { apiClient } from "./apiClient";
 
-export const getStaffPatients = async () => {
-  try {
-    const res = await api.get("/staff/patients");
-    const data: Link[] = res.data;
+export const getStaffPatients = async () =>
+  apiClient.get<Link[]>("/staff/patients");
 
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
-
-export const getStaffPatient = async (linkId: string) => {
-  try {
-    const res = await api.get(`/staff/patients/${linkId}`);
-    const data: Link = res.data;
-
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
+export const getStaffPatient = async (linkId: string) =>
+  apiClient.get<Link>(`/staff/patients/${linkId}`);
 
 export const createAssignment = async (payload: {
   patientId: string;
@@ -31,47 +12,15 @@ export const createAssignment = async (payload: {
   customReps?: number;
   customHoldSeconds?: number;
   notes?: string;
-}) => {
-  try {
-    const res = await api.post("/staff/assignment", payload);
-    const data: Assignment = res.data;
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
+}) => apiClient.post<Assignment>("/staff/assignment", payload);
 
-export const getStaffPatientAssignments = async (linkId: string) => {
-  try {
-    const res = await api.get(`/staff/patients/${linkId}/assignments`);
-    const data: Assignment[] = res.data;
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
-export const getStaffPatientAssignmentById = async (id: string) => {
-  try {
-    const res = await api.get(`/staff/assignments/${id}`);
-    const data: Assignment = res.data;
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
+export const getStaffPatientAssignments = async (linkId: string) =>
+  apiClient.get<Assignment[]>(`/staff/patients/${linkId}/assignments`);
 
-export const getStaffSessionResults = async (assignmentId: string) => {
-  try {
-    const res = await api.get(
-      `/staff/assignments/${assignmentId}/session-results`,
-    );
-    const data: SessionResult[] = res.data;
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
+export const getStaffPatientAssignmentById = async (id: string) =>
+  apiClient.get<Assignment>(`/staff/assignments/${id}`);
+
+export const getStaffSessionResults = async (assignmentId: string) =>
+  apiClient.get<SessionResult[]>(
+    `/staff/assignments/${assignmentId}/session-results`,
+  );

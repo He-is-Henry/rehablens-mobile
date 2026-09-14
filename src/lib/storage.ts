@@ -48,6 +48,16 @@ function createStorage(userId?: string) {
     async clear(key: string) {
       return await AsyncStorage.removeItem(`${PREFIX}${key}`);
     },
+
+    async deleteAll() {
+      const keys = await AsyncStorage.getAllKeys();
+
+      const userKeys = keys.filter((key) => key.startsWith(PREFIX));
+
+      if (userKeys.length) {
+        await AsyncStorage.multiRemove(userKeys);
+      }
+    },
   };
 }
 

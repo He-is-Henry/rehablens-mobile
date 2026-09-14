@@ -1,5 +1,4 @@
-import { AxiosError } from "axios";
-import { api } from "./axios";
+import { apiClient } from "./apiClient";
 import token from "./token";
 
 interface ProfileRes {
@@ -18,113 +17,43 @@ interface GenericRes {
   message: string;
 }
 
-export const login = async (email: string, password: string) => {
-  try {
-    const res = await api.post("auth/login", {
-      email,
-      password,
-    });
-    const data: LoginRes = res.data;
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
+export const login = async (email: string, password: string) =>
+  apiClient.post<LoginRes>("auth/login", { email, password });
 
 export const logout = async () => {
   const refreshToken = await token.getRefresh();
-  const res = await api.post("auth/logout", { refreshToken });
-  const data: GenericRes = res.data;
-
-  return data;
+  return apiClient.post<GenericRes>("auth/logout", { refreshToken });
 };
 
-export const forgotPassword = async (email: string) => {
-  try {
-    const res = await api.post("auth/forgot-password", {
-      email,
-    });
-    const data: GenericRes = res.data;
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
+export const forgotPassword = async (email: string) =>
+  apiClient.post<GenericRes>("auth/forgot-password", {
+    email,
+  });
 
 export const resetPassword = async (payload: {
   email: string;
   token?: string;
   manualCode?: string;
   newPassword: string;
-}) => {
-  try {
-    const res = await api.post("auth/reset-password", payload);
-    const data: GenericRes = res.data;
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
+}) => apiClient.post<GenericRes>("auth/reset-password", payload);
 
-export const fetchProfile = async () => {
-  try {
-    const res = await api.get("auth/profile");
-    const data: ProfileRes = res.data;
+export const fetchProfile = async () =>
+  apiClient.get<ProfileRes>("auth/profile");
 
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
+export const revokeSession = async (id: string) =>
+  apiClient.delete(`auth/session/${id}`);
 
-export const revokeSession = async (id: string) => {
-  try {
-    const res = await api.delete(`auth/session/${id}`);
-    return res.data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
+export const revokeAllSessions = async () =>
+  apiClient.delete("auth/session/all");
 
-export const revokeAllSessions = async () => {
-  try {
-    const res = await api.delete("auth/session/all");
-    return res.data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
-
-export const changeInitialPassword = async (newPassword: string) => {
-  try {
-    const res = await api.post("auth/change-initial-password", { newPassword });
-    const data: GenericRes = res.data;
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
+export const changeInitialPassword = async (newPassword: string) =>
+  apiClient.post<GenericRes>("auth/change-initial-password", { newPassword });
 
 export const changePassword = async (
   currentPassword: string,
   newPassword: string,
-) => {
-  try {
-    const res = await api.patch("auth/change-password", {
-      currentPassword,
-      newPassword,
-    });
-    const data: GenericRes = res.data;
-    return data;
-  } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
-  }
-};
+) =>
+  apiClient.patch<GenericRes>("auth/change-password", {
+    currentPassword,
+    newPassword,
+  });

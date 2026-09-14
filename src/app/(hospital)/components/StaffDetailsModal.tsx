@@ -1,6 +1,6 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
-import { useQuery } from '@/hooks/useQuery';
-import { getLinkedPatients, getStaffById, updateStaff } from '@/lib/hospital';
+import { updateStaff } from '@/lib/hospital';
+import { useHospitalQuery } from '@/queries/hospital';
 import { UserRole, UserRoleValues } from '@/types/role';
 import { Ionicons } from '@expo/vector-icons';
 import { useRef, useState } from 'react';
@@ -15,24 +15,14 @@ type Props = {
 }
 
 export default function StaffDetailModal({ staffId, close, onUpdated }: Props) {
-  const getStaffByIdQuery: Query<User> = {
-    key: `/hospital/staff/${staffId}`,
-    fetcher: () => getStaffById(staffId)
-  }
-
-  const getLinkedPatientsQuery: Query<Link[]> = {
-    key: `/hospital/patients/${staffId}`,
-    fetcher: () => getLinkedPatients(undefined, staffId)
-  }
-
   const scrollRef = useRef<ScrollView>(null);
 
-  const { data: staff, setData: setStaff, loading } = useQuery(getStaffByIdQuery);
+  const { data: staff, setData: setStaff, loading } = useHospitalQuery.staffById(staffId);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const { data: assignedLinks, setData: setAssignedLinks, loading: loadingAssigned } = useQuery(getLinkedPatientsQuery);
+  const { data: assignedLinks, setData: setAssignedLinks, loading: loadingAssigned } = useHospitalQuery.linkedPatients(staffId)
 
 
   if (!staff) return;

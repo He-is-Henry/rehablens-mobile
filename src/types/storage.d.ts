@@ -9,4 +9,5 @@ type UserStorage = {
   set: (key: string, value: unknown) => Promise<void>;
   get: <T>(key: string) => Promise<{ cachedAt: Date; data: T } | null>;
   clear: (key: string) => Promise<void>;
+  deleteAll(): Promise<void>;
 };

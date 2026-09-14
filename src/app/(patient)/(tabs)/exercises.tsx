@@ -1,9 +1,9 @@
 import AssignmentCard from "@/components/AssignmentCard";
 import { colors, radius, spacing, typography } from "@/constants/theme";
 import { useRefresh } from "@/hooks/useRefresh";
-import { getPatientAssignments } from "@/lib/patient";
+import { usePatientQuery } from "@/queries/patient";
 import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -18,31 +18,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Exercise() {
   const insets = useSafeAreaInsets();
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const { data: assignments, refreshData, loading } = usePatientQuery.assignments()
+
+
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>("all");
 
-  const getAllAssignments = async () => {
-    try {
-      setLoading(true);
-      const res = await getPatientAssignments();
-      setAssignments(res);
-    } catch (error) {
-      console.error("Failed to load assignments:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const { refreshing, onRefreshControl } = useRefresh(getAllAssignments);
+  const { refreshing, onRefreshControl } = useRefresh(refreshData);
 
-  useEffect(() => {
-    getAllAssignments();
-  }, []);
 
   const hospitals = useMemo(() => {
     const map = new Map<string, string>();
-    assignments.forEach((item) => {
+    assignments?.forEach((item) => {
       if (item.hospitalId?._id && item.hospitalId?.name) {
         map.set(item.hospitalId._id, item.hospitalId.name);
       }
@@ -53,7 +41,7 @@ export default function Exercise() {
   // Filter assignments based on selected pill
   const filteredAssignments = useMemo(() => {
     if (selectedHospitalId === "all") return assignments;
-    return assignments.filter(
+    return assignments?.filter(
       (item) => item.hospitalId?._id === selectedHospitalId
     );
   }, [assignments, selectedHospitalId]);
@@ -95,14 +83,14 @@ export default function Exercise() {
                   selectedHospitalId === "all" && styles.pillTextActive,
                 ]}
               >
-                All ({assignments.length})
+                All ({assignments?.length})
               </Text>
             </Pressable>
 
             {/* Individual Hospital Pills */}
             {hospitals.map((hospital) => {
               const isSelected = selectedHospitalId === hospital._id;
-              const count = assignments.filter(
+              const count = assignments?.filter(
                 (a) => a.hospitalId?._id === hospital._id
               ).length;
 

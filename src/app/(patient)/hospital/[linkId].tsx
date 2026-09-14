@@ -1,8 +1,7 @@
 import AssignmentList from '@/app/(patient)/components/AssignmentList';
 import { colors, radius, spacing, typography } from '@/constants/theme';
-import { getPatientHospitalById } from '@/lib/patient';
+import { usePatientQuery } from '@/queries/patient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -16,14 +15,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function PatientHospitalScreen() {
   const { linkId } = useLocalSearchParams<{ linkId: string }>();
   const insets = useSafeAreaInsets();
-  const [link, setLink] = useState<Link | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    getPatientHospitalById(linkId)
-      .then(setLink)
-      .finally(() => setLoading(false));
-  }, [linkId]);
+  const { data: link, loading } = usePatientQuery.hospitalById(linkId);
+
 
   if (loading) {
     return (
