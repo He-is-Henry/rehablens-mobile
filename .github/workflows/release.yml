@@ -25,8 +25,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build APK on EAS Cloud and Download
-        run: eas build --platform android --profile preview --non-interactive --output=rehablens.apk
+      - name: Build APK on EAS Cloud
+        run: eas build --platform android --profile preview --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Download compiled APK
+        run: eas build:download --platform android --output rehablens.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
