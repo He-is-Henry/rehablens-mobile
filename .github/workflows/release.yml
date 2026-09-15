@@ -31,7 +31,9 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Download compiled APK
-        run: eas build:download --platform android --output rehablens.apk
+        run: |
+          eas build:download --platform android
+          mv *.apk rehablens.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
