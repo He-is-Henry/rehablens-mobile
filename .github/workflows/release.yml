@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,7 +25,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build APK on EAS Cloud
-        run: eas build --platform android --profile preview --non-interactive
+      - name: Build APK on EAS Cloud and Download
+        run: eas build --platform android --profile preview --non-interactive --output=rehablens.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Upload APK to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: rehablens.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
