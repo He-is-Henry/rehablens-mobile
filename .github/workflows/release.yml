@@ -25,14 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build APK on EAS Cloud
-        run: eas build --platform android --profile preview --non-interactive
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Download compiled APK
+      - name: Build, Download, and Rename APK
         run: |
-          eas build:download --platform android
+          BUILD_OUTPUT=$(eas build --platform android --profile preview --non-interactive --json)
+          BUILD_ID=$(echo "$BUILD_OUTPUT" | jq -r '.[0].id')
+          eas build:download --build-id "$BUILD_ID"
           mv *.apk rehablens.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
