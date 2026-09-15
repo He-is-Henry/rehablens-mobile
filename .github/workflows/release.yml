@@ -25,12 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build, Download, and Rename APK
+      - name: Build and Download APK directly
         run: |
           BUILD_OUTPUT=$(eas build --platform android --profile preview --non-interactive --json)
-          BUILD_ID=$(echo "$BUILD_OUTPUT" | jq -r '.[0].id')
-          eas build:download --build-id "$BUILD_ID"
-          mv *.apk rehablens.apk
+          APK_URL=$(echo "$BUILD_OUTPUT" | jq -r '.[0].artifacts.buildUrl')
+          curl -L "$APK_URL" -o rehablens.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
