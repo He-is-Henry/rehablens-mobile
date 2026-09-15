@@ -1,6 +1,6 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
-import { login } from '@/lib/auth';
+import { login, recoverAccount } from '@/lib/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -22,6 +22,13 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [canRecover, setCanRecover] = useState(false);
+
+
+  const handleCancelRecovery = () => {
+    setCanRecover(false);
+    setError('');
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -31,16 +38,37 @@ export default function LoginScreen() {
 
     setLoading(true);
     setError('');
+    setCanRecover(false);
 
     try {
       const res = await login(email, password);
-
       setAuth(res.accessToken, res.refreshToken, res.user);
-      // index will handle the redirect based on role
       router.replace('/');
     } catch (err: any) {
-      console.log(err)
-      setError(err.message || 'Something went wrong');
+      console.log(err);
+
+      if (err.data?.error === 'AccountDeleted' && err.data?.isRecoverable) {
+        setCanRecover(true);
+        setError(err.message || 'Your account is scheduled for deletion.');
+      } else {
+        setError(err.message || 'Something went wrong');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRecover = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await recoverAccount(email, password);
+
+      setAuth(res.accessToken, res.refreshToken, res.user);
+      router.replace('/');
+    } catch (err: any) {
+      setError(err.data?.message || err.message || 'Failed to recover account');
     } finally {
       setLoading(false);
     }
@@ -52,7 +80,6 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.inner}>
-
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.brand}>RehabLens</Text>
@@ -66,7 +93,10 @@ export default function LoginScreen() {
             <TextInput
               style={styles.input}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                setCanRecover(false);
+              }}
               placeholder="you@example.com"
               placeholderTextColor={colors.textGrey}
               keyboardType="email-address"
@@ -79,7 +109,10 @@ export default function LoginScreen() {
             <TextInput
               style={[styles.input, styles.passwordInput]}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                setCanRecover(false);
+              }}
               placeholder="••••••••"
               placeholderTextColor={colors.textGrey}
               secureTextEntry={!showPassword}
@@ -87,7 +120,7 @@ export default function LoginScreen() {
             />
             <Pressable
               style={styles.eyeBtn}
-              onPress={() => setShowPassword(p => !p)}
+              onPress={() => setShowPassword((p) => !p)}
             >
               <Ionicons
                 name={showPassword ? 'eye-off' : 'eye'}
@@ -99,16 +132,41 @@ export default function LoginScreen() {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Pressable
-            style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading
-              ? <ActivityIndicator color={colors.white} />
-              : <Text style={styles.buttonText}>Sign in</Text>
-            }
-          </Pressable>
+          {canRecover ? (
+            <View style={styles.recoverySection}>
+              <Pressable
+                style={({ pressed }) => [styles.primaryButton, pressed && { opacity: 0.85 }]}
+                onPress={handleRecover}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Recover Account</Text>
+                )}
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [styles.secondaryButton, pressed && { opacity: 0.7 }]}
+                onPress={handleCancelRecovery}
+                disabled={loading}
+              >
+                <Text style={styles.secondaryButtonText}>Back to regular login</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [styles.primaryButton, pressed && { opacity: 0.85 }]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.primaryButtonText}>Sign In</Text>
+              )}
+            </Pressable>
+          )}
 
           <Pressable onPress={() => router.push('/(auth)/forgot-password')}>
             <Text style={styles.forgotPassword}>Forgot password?</Text>
@@ -122,7 +180,6 @@ export default function LoginScreen() {
             <Text style={styles.footerLink}> Sign up</Text>
           </Pressable>
         </View>
-
       </View>
     </KeyboardAvoidingView>
   );
@@ -188,6 +245,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.xs,
   },
+  recoverButton: {
+    backgroundColor: colors.accent,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
   buttonPressed: {
     opacity: 0.85,
   },
@@ -215,7 +279,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
-
   passwordRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -236,5 +299,27 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 4,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  recoverySection: {
+    gap: spacing.sm,
+  },
+  primaryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: colors.white,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#71717A',
+    fontSize: typography.small,
+    fontWeight: '500',
   },
 });

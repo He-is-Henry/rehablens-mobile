@@ -1,3 +1,4 @@
+import { deleteAccount as apiDeleteAccount } from "@/lib/auth";
 import { api } from "@/lib/axios";
 import createStorage from "@/lib/storage";
 import token from "@/lib/token";
@@ -38,9 +39,6 @@ export const AuthProvider = ({ children }: Props) => {
     ? createStorage(activeUserId)
     : null
 
-  /**
-   * Restore the active user ID from global storage.
-   */
   useEffect(() => {
 
     const initState = async () => {
@@ -69,9 +67,6 @@ export const AuthProvider = ({ children }: Props) => {
     initState();
   }, []);
 
-  /**
-   * Redirect users who must change their initial password.
-   */
   useEffect(() => {
     if (!user?.mustChangePassword) return;
 
@@ -79,10 +74,6 @@ export const AuthProvider = ({ children }: Props) => {
 
     router.replace("/(auth)/change-initial-password");
   }, [user?.mustChangePassword, pathname]);
-
-  /**
-   * Restore cached user/session data and fetch fresh profile data.
-   */
 
   const fetchCurrentUser = async () => {
     if (!userStorage) throw Error('No storage available')
@@ -151,9 +142,7 @@ export const AuthProvider = ({ children }: Props) => {
     fetchCurrentUser();
   }, [activeUserId]);
 
-  /**
-   * Set authentication state after login.
-   */
+
   const setAuth = async (
     accessToken: string,
     refreshToken: string,
@@ -181,9 +170,7 @@ export const AuthProvider = ({ children }: Props) => {
 
   };
 
-  /**
-   * Update sessions both in state and cache.
-   */
+
   const setSessionsData = (sessionsData: Session[]) => {
     setSessions(sessionsData);
 
@@ -192,9 +179,6 @@ export const AuthProvider = ({ children }: Props) => {
     }
   };
 
-  /**
-   * Update user both in state and cache.
-   */
   const setUserData = (userData: User) => {
     setUser(userData);
 
@@ -203,9 +187,7 @@ export const AuthProvider = ({ children }: Props) => {
     }
   };
 
-  /**
-   * Clear authentication state and user cache.
-   */
+
   const clearAuth = async () => {
     await token.clear();
 
@@ -225,9 +207,6 @@ export const AuthProvider = ({ children }: Props) => {
 
   };
 
-  /**
-   * Update the authenticated user's profile.
-   */
   const editProfile = async (
     payload: EditProfilePayload
   ): Promise<User> => {
@@ -276,6 +255,26 @@ export const AuthProvider = ({ children }: Props) => {
     return userStorage;
   };
 
+  const changeInitialPassword = async (newPassword: string) => {
+    await api.post("auth/change-initial-password", { newPassword });
+
+    const currentRefreshToken = await token.getRefresh();
+    const res = await api.post("auth/refresh", { refreshToken: currentRefreshToken });
+
+    const { accessToken, refreshToken: newRefreshToken } = res.data;
+    token.setAccess(accessToken);
+    token.setRefresh(newRefreshToken);
+
+    if (user) {
+      setUserData({ ...user, mustChangePassword: false });
+    }
+  };
+
+  const deleteAccount = async () => {
+    await apiDeleteAccount();
+    await clearAuth();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -288,7 +287,9 @@ export const AuthProvider = ({ children }: Props) => {
         clearAuth,
         editProfile,
         requireStorage,
-        fetchCurrentUser
+        fetchCurrentUser,
+        changeInitialPassword,
+        deleteAccount
       }}
     >
       {children}

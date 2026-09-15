@@ -53,4 +53,6 @@ interface AuthContextType {
   editProfile: (payload: EditProfilePayload) => Promise<User>;
   requireStorage: () => UserStorage;
   fetchCurrentUser: () => Promise<void>;
+  changeInitialPassword: (newPassword: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }

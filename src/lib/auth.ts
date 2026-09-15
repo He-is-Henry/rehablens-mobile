@@ -57,3 +57,9 @@ export const changePassword = async (
     currentPassword,
     newPassword,
   });
+
+export const recoverAccount = async (email: string, password: string) =>
+  apiClient.post<LoginRes>("auth/recover", { email, password });
+
+export const deleteAccount = async () =>
+  apiClient.delete<GenericRes>("auth/delete");

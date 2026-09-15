@@ -25,7 +25,7 @@ type Props = {
 };
 
 export default function SharedProfile({ extra }: Props) {
-  const { user, clearAuth, sessions, setSessionsData, editProfile, fetchCurrentUser } = useAuth();
+  const { user, clearAuth, sessions, setSessionsData, editProfile, fetchCurrentUser, deleteAccount } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [loggingOut, setLoggingOut] = useState(false);
@@ -53,6 +53,9 @@ export default function SharedProfile({ extra }: Props) {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const { refreshing, onRefreshControl } = useRefresh(fetchCurrentUser)
 
 
@@ -73,6 +76,28 @@ export default function SharedProfile({ extra }: Props) {
       setLoggingOut(false);
       setShowConfirm(false);
       Toast.show({ type: 'error', text1: 'Logout failed', text2: 'Please try again' });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      setShowDeleteConfirm(false);
+      Toast.show({
+        type: 'info',
+        text1: 'Account scheduled for deletion',
+        text2: 'You have 7 days to log back in and recover it.',
+      });
+      router.replace('/(auth)/login');
+    } catch (e: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Deletion failed',
+        text2: e?.message ?? 'Could not delete account',
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -248,6 +273,53 @@ export default function SharedProfile({ extra }: Props) {
             <Text style={styles.logoutText}>Sign out</Text>
           </Pressable>
         </View>
+
+        {/* Danger Zone */}
+        <View style={styles.section}>
+          <Pressable
+            style={({ pressed }) => [styles.deleteButton, pressed && { opacity: 0.85 }]}
+            onPress={() => setShowDeleteConfirm(true)}
+          >
+            <Text style={styles.deleteText}>Delete Account</Text>
+          </Pressable>
+        </View>
+
+        {/* Confirm Delete Modal */}
+        <Modal
+          visible={showDeleteConfirm}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDeleteConfirm(false)}
+        >
+          <Pressable style={styles.overlay} onPress={() => setShowDeleteConfirm(false)}>
+            <Pressable style={styles.modal}>
+              <Text style={styles.modalTitle}>Delete Account?</Text>
+              <Text style={styles.modalSub}>
+                Your account will be deactivated immediately. You can recover it within 7 days by signing in. After 7 days, your account and data will be permanently deleted.
+              </Text>
+              <View style={styles.modalActions}>
+                <Pressable
+                  style={({ pressed }) => [styles.modalCancel, pressed && { opacity: 0.7 }]}
+                  onPress={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.modalConfirm, pressed && { opacity: 0.85 }]}
+                  onPress={handleDeleteAccount}
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <Text style={styles.modalConfirmText}>Delete</Text>
+                  )}
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </ScrollView>
 
       {/* Edit Profile Modal */}
@@ -455,6 +527,7 @@ export default function SharedProfile({ extra }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
+
     </>
   );
 }
@@ -708,6 +781,18 @@ const styles = StyleSheet.create({
   modalConfirmText: {
     fontSize: typography.body,
     color: colors.white,
+    fontWeight: '600',
+  },
+
+  deleteButton: {
+    backgroundColor: 'transparent',
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  deleteText: {
+    color: colors.error,
+    fontSize: typography.small,
     fontWeight: '600',
   },
 });

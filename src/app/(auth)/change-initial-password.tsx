@@ -1,6 +1,5 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
-import { changeInitialPassword } from '@/lib/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -9,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 export default function ChangeInitialPassword() {
-  const { user, setUserData } = useAuth();
+  const { user, setUserData, changeInitialPassword } = useAuth();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

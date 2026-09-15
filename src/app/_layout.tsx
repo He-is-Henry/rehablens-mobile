@@ -1,4 +1,5 @@
 import OfflineBanner from '@/components/offlineBanner';
+import { UpdateBanner } from '@/components/UpdateBanner';
 import { AuthProvider } from '@/context/auth.context';
 import { NetworkProvider } from '@/context/network.context';
 import * as Notifications from 'expo-notifications';
@@ -20,6 +21,8 @@ Notifications.setNotificationHandler({
 });
 
 export default function RootLayout() {
+  console.log('ROOT LAYOUT MOUNTED');
+
   useEffect(() => {
     const setupNotifications = async () => {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -46,6 +49,7 @@ export default function RootLayout() {
         <AuthProvider>
           <StatusBar style="dark" />
           <OfflineBanner />
+          <UpdateBanner />
           <Stack screenOptions={{ headerShown: false }} />
           <Toast />
         </AuthProvider>

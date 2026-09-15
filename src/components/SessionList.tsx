@@ -1,4 +1,5 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 import {
   Pressable,
   StyleSheet,
@@ -65,16 +66,22 @@ function SessionCard({
 
   const isUnknown = !session.deviceInfo || session.deviceInfo === 'Unknown Device';
 
-  const deviceIcon = isUnknown ? '❓' :
-    session.deviceInfo.toLowerCase().includes('android') ? '🤖' :
-      session.deviceInfo.toLowerCase().includes('ios') ? '🍎' :
-        session.deviceInfo.toLowerCase().includes('windows') ? '🖥️' :
-          session.deviceInfo.toLowerCase().includes('mac') ? '💻' : '📱';
+  const deviceIconName: keyof typeof Ionicons.glyphMap = isUnknown
+    ? 'help-circle-outline'
+    : session.deviceInfo.toLowerCase().includes('android')
+      ? 'logo-android'
+      : session.deviceInfo.toLowerCase().includes('ios')
+        ? 'logo-apple'
+        : session.deviceInfo.toLowerCase().includes('windows')
+          ? 'logo-windows'
+          : session.deviceInfo.toLowerCase().includes('mac')
+            ? 'laptop-outline'
+            : 'phone-portrait-outline';
 
   return (
     <View style={styles.sessionRow}>
       <View style={styles.sessionIcon}>
-        <Text style={styles.sessionIconText}>{deviceIcon}</Text>
+        <Ionicons name={deviceIconName} size={20} color={colors.textDark} />
       </View>
 
       <View style={styles.sessionInfo}>

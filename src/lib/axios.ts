@@ -6,7 +6,9 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
+import * as Device from "expo-device";
 import { router } from "expo-router";
+import { Platform } from "react-native";
 import token from "./token";
 
 declare module "axios" {
@@ -20,6 +22,20 @@ let queue: {
   resolve: (token: string) => void;
   reject: (reason?: unknown) => void;
 }[] = [];
+
+const getUserAgent = (): string => {
+  const osName = Device.osName || (Platform.OS === "ios" ? "iOS" : "Android");
+  const osVersion = Device.osVersion || Platform.Version;
+  const model =
+    Device.modelName || (Platform.OS === "ios" ? "iPhone" : "Android Device");
+  const brand = Device.brand ? `${Device.brand} ` : "";
+
+  const fullDevice = model.toLowerCase().startsWith(brand.toLowerCase().trim())
+    ? model
+    : `${brand}${model}`.trim();
+
+  return `RehabLens/1.0 (${fullDevice}; ${osName} ${osVersion})`;
+};
 
 const processQueue = (error: unknown, accessToken?: string) => {
   queue.forEach((promise) => {
@@ -40,6 +56,7 @@ export const api: AxiosInstance = axios.create({
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
+    "User-Agent": getUserAgent(),
   },
 });
 

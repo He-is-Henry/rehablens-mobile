@@ -1,13 +1,29 @@
 import { AxiosError, AxiosRequestConfig } from "axios";
 import { api } from "./axios";
 
+export class ApiError extends Error {
+  status?: number;
+  data?: any;
+
+  constructor(message: string, status?: number, data?: any) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
+}
+
 const handle = async <T>(fn: () => Promise<{ data: T }>): Promise<T> => {
   try {
     const res = await fn();
     return res.data;
   } catch (e) {
-    const err = e as AxiosError<{ message: string }>;
-    throw new Error(err.response?.data?.message ?? "Something went wrong");
+    const err = e as AxiosError<any>;
+    throw new ApiError(
+      err.response?.data?.message ?? "Something went wrong",
+      err.response?.status,
+      err.response?.data,
+    );
   }
 };
 
