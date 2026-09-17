@@ -1,4 +1,5 @@
 import CreateAssignmentModal from '@/app/(hospital)/components/CreateAssignmentModal';
+import NotificationBell from '@/components/NotificationBell';
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
 import { useStaffQuery } from '@/queries/staff';
@@ -55,8 +56,12 @@ export default function StaffDashboard() {
           <Text style={styles.hospitalName}>{hospital?.name ?? 'Your Hospital'}</Text>
           <Text style={styles.meta}>{user?.customId} · {user?.name}</Text>
         </View>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>Staff</Text>
+
+        <View style={styles.headerActions}>
+          <NotificationBell />
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>Staff</Text>
+          </View>
         </View>
       </View>
 
@@ -207,5 +212,10 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
     color: colors.textGrey,
     textAlign: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
 });

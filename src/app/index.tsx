@@ -18,6 +18,8 @@ export default function Index() {
       return;
     }
 
+    console.log(user)
+
 
     switch (user.role) {
       case UserRoleValues.HOSPITAL_ADMIN:
@@ -38,9 +40,11 @@ export default function Index() {
         );
         break;
 
+      case UserRoleValues.ADMIN:
+        router.replace('/(admin)/(tabs)/dashboard');
+        break;
+
       default:
-
-
         router.replace('/(auth)/login');
     }
   }, [user, loading]);

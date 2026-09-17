@@ -1,3 +1,4 @@
+import NotificationBell from '@/components/NotificationBell';
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
 import { useRefresh } from '@/hooks/useRefresh';
@@ -36,20 +37,19 @@ export default function PatientDashboard() {
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.greeting}>
-              Hello, {user?.name?.split(' ')[0]} 👋
-            </Text>
+            <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0]} 👋</Text>
             <Text style={styles.meta}>{user?.customId}</Text>
           </View>
-          <Pressable
-            style={({ pressed }) => [
-              styles.addBtn,
-              pressed && { opacity: 0.8 },
-            ]}
-            onPress={() => setModalVisible(true)}
-          >
-            <Text style={styles.addBtnText}>+ Link hospital</Text>
-          </Pressable>
+
+          <View style={styles.headerActions}>
+            <NotificationBell />
+            <Pressable
+              style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8 }]}
+              onPress={() => setModalVisible(true)}
+            >
+              <Text style={styles.addBtnText}>+ Link hospital</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -309,5 +309,10 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '600',
     fontSize: typography.small,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
 });

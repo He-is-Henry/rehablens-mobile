@@ -241,6 +241,11 @@ export default function SharedProfile({ extra }: Props) {
                 Manage reminders →
               </Text>
             </Pressable>
+            <Pressable onPress={() => router.push('/activity')} style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Recent Activity</Text>
+              <Text style={[styles.infoValue, { color: colors.primary }]}>
+                Recent activity →</Text>
+            </Pressable>
           </View>
         </View>
 

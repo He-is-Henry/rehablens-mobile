@@ -1,3 +1,4 @@
+import NotificationBell from '@/components/NotificationBell';
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
 import { getPatientByLinkId } from '@/lib/hospital';
@@ -54,6 +55,7 @@ export default function HospitalDashboard() {
           <Text style={styles.adminMeta}>{user?.customId} · {user?.name}</Text>
         </View>
         <View style={styles.headerRight}>
+          <NotificationBell />
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{hospital?.customId}</Text>
           </View>
