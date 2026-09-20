@@ -58,6 +58,11 @@ type RepStateInstructions = {
   returning: string;
 };
 
+type ExerciseMedia = {
+  url: string;
+  caption?: string;
+  type?: "image" | "video";
+};
 type Exercise = {
   _id: string;
   name: string;
@@ -66,12 +71,15 @@ type Exercise = {
   targetReps: number;
   holdSeconds: number;
   angleChecks: AngleCheck[];
-  repTriggers: RepTrigger[]; // ← was repTrigger (single)
-  repTriggerCombinator: RepTriggerCombinator; // ← new, defaults to 'all'
+  repTriggers: RepTrigger[];
+  repTriggerCombinator: RepTriggerCombinator;
   repStateInstructions: RepStateInstructions;
   cameraOrientation: "front" | "side";
   cameraOrientationTip: string;
+  media: ExerciseMedia[];
 };
+
+type CreateExercisePayload = Omit<Exercise, "_id">;
 
 type AssignmentStatus = "active" | "completed" | "paused" | "archived";
 

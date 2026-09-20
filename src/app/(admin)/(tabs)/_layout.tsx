@@ -26,11 +26,16 @@ export default function SuperAdminLayout() {
         options={{
           title: 'Dashboard',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'grid' : 'grid-outline'}
-              size={20}
-              color={color}
-            />
+            <Ionicons name={focused ? 'grid' : 'grid-outline'} size={20} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="exercises"
+        options={{
+          title: 'Exercises',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'barbell' : 'barbell-outline'} size={20} color={color} />
           ),
         }}
       />
@@ -39,11 +44,7 @@ export default function SuperAdminLayout() {
         options={{
           title: 'Team',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'shield-checkmark' : 'shield-checkmark-outline'}
-              size={20}
-              color={color}
-            />
+            <Ionicons name={focused ? 'shield-checkmark' : 'shield-checkmark-outline'} size={20} color={color} />
           ),
         }}
       />
@@ -52,11 +53,7 @@ export default function SuperAdminLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'person-circle' : 'person-circle-outline'}
-              size={20}
-              color={color}
-            />
+            <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={20} color={color} />
           ),
         }}
       />

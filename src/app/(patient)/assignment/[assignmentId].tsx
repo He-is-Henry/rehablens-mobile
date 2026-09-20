@@ -7,16 +7,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PatientAssignmentDetail() {
   const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
-  console.log({ assignmentId })
+  console.log({ assignmentId });
   const insets = useSafeAreaInsets();
 
-  const sessionsQuery =
-    usePatientQuery.sessionResults(assignmentId);
-
-  const assignmentQuery =
-    usePatientQuery.assignmentById(assignmentId);
+  const sessionsQuery = usePatientQuery.sessionResults(assignmentId);
+  const assignmentQuery = usePatientQuery.assignmentById(assignmentId);
 
   const assignment = assignmentQuery.data;
+  const isActive = assignment?.status === 'active';
 
   const handleStart = () => {
     Alert.alert(
@@ -47,16 +45,19 @@ export default function PatientAssignmentDetail() {
         loading={assignmentQuery.loading || sessionsQuery.loading}
       />
 
-      {assignment?.status === 'active' && (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Pressable
-            style={({ pressed }) => [styles.startBtn, pressed && { opacity: 0.85 }]}
-            onPress={handleStart}
-          >
-            <Text style={styles.startBtnText}>Start again</Text>
-          </Pressable>
-        </View>
-      )}
+      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.startBtn,
+            !isActive && styles.disabledBtn,
+            pressed && isActive && { opacity: 0.85 },
+          ]}
+          onPress={handleStart}
+          disabled={!isActive}
+        >
+          <Text style={styles.startBtnText}>Start again</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -84,5 +85,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     alignItems: 'center',
   },
-  startBtnText: { color: colors.white, fontSize: typography.body, fontWeight: '700' },
+  disabledBtn: {
+    opacity: 0.4,
+  },
+  startBtnText: {
+    color: colors.white,
+    fontSize: typography.body,
+    fontWeight: '700'
+  },
 });

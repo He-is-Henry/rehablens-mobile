@@ -9,6 +9,7 @@ import * as Speech from 'expo-speech';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -149,6 +150,20 @@ function PreStartScreen({
   const holdSeconds = assignment.customHoldSeconds ?? exercise.holdSeconds;
   const insets = useSafeAreaInsets();
 
+  const isActive = assignment.status === 'active';
+
+  const handleStartPress = () => {
+    if (!isActive) {
+      Alert.alert(
+        'Exercise Unavailable',
+        `This exercise is currently ${assignment.status} and cannot be started.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    onStart();
+  };
+
   return (
     <View style={[styles.preStart, { paddingTop: insets.top }]}>
       <Pressable onPress={() => router.back()} hitSlop={8} style={styles.preStartBack}>
@@ -205,15 +220,18 @@ function PreStartScreen({
         </View>
       </ScrollView>
 
-      {assignment.status !== 'active' ? <View style={styles.blockedNotice}>
-        <Text style={styles.blockedText}>
-          This exercise is currently {assignment.status} and can't be started.
-        </Text>
-      </View> : <View style={[styles.preStartFooter, { paddingBottom: insets.bottom + spacing.md }]}>
-        <Pressable style={({ pressed }) => [styles.startBtn, pressed && { opacity: 0.85 }]} onPress={onStart}>
+      <View style={[styles.preStartFooter, { paddingBottom: insets.bottom + spacing.md }]}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.startBtn,
+            !isActive && styles.disabledBtn,
+            pressed && isActive && { opacity: 0.85 },
+          ]}
+          onPress={handleStartPress}
+        >
           <Text style={styles.startBtnText}>Start exercise</Text>
         </Pressable>
-      </View>}
+      </View>
     </View>
   );
 }
@@ -836,6 +854,9 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
     color: colors.textGrey,
     lineHeight: 20,
+  },
+  disabledBtn: {
+    opacity: 0.4,
   },
   preStartFooter: {
     paddingHorizontal: spacing.lg,
