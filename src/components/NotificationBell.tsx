@@ -1,8 +1,11 @@
 import { colors, radius } from '@/constants/theme';
-import { getActivity, getUnseenCount, markSeen } from '@/lib/audit';
+import { useAuth } from '@/context/auth.context';
+import { markSeen } from '@/lib/audit';
 import { renderAuditSentence } from '@/lib/audit-sentence';
+import { useAuditQuery } from '@/queries/audit';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -14,28 +17,65 @@ import {
 } from 'react-native';
 
 export default function NotificationBell() {
-  const [count, setCount] = useState(0);
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const { data: countData, setData: setCountData, refreshData: refreshCount } = useAuditQuery.unseenCount();
+
+  const {
+    data: entriesData,
+    loading,
+    refreshData: refreshActivity
+  } = useAuditQuery.unseenActivity();
+
   const [open, setOpen] = useState(false);
-  const [entries, setEntries] = useState<AuditLogEntry[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    getUnseenCount().then((res) => setCount(res.count)).catch(() => { });
-  }, []);
+  const count = countData?.count ?? 0;
+  const entries = entriesData ?? [];
+  const currentUserId = user?._id;
 
-  const openBell = async () => {
+  const openBell = () => {
     setOpen(true);
-    setLoading(true);
-    try {
-      const data = await getActivity({ unseenOnly: true, limit: 20 });
-      setEntries(data);
-      if (data.length > 0) {
-        await markSeen(data.map((d) => d._id));
-        setCount(0);
-      }
-    } finally {
-      setLoading(false);
-    }
+    setReadIds(new Set());
+    Promise.all([refreshActivity(), refreshCount()]);
+  };
+
+  const markOneSeen = async (id: string) => {
+    if (readIds.has(id)) return;
+
+    setReadIds((prev) => new Set(prev).add(id));
+    setCountData((prev) => ({
+      count: Math.max((prev?.count ?? 1) - 1, 0),
+    }));
+
+    await markSeen([id]).catch(() => {
+      setReadIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      setCountData((prev) => ({
+        count: (prev?.count ?? 0) + 1,
+      }));
+    });
+  };
+
+  const markAllSeen = async () => {
+    const unreadEntries = entries.filter((e) => !readIds.has(e._id));
+    if (unreadEntries.length === 0) return;
+
+    const unreadIds = unreadEntries.map((e) => e._id);
+
+    setReadIds((prev) => new Set([...prev, ...unreadIds]));
+    setCountData({ count: 0 });
+
+    await markSeen(unreadIds).catch(() => { });
+  };
+
+  const handleNavigateToActivity = () => {
+    setOpen(false);
+    router.push('/activity');
   };
 
   return (
@@ -52,25 +92,64 @@ export default function NotificationBell() {
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
           <Pressable style={styles.sheet} onPress={() => { }}>
-            <Text style={styles.title}>Notifications</Text>
+            <View style={styles.header}>
+              <Text style={styles.title}>Notifications</Text>
+              {entries.some((e) => !readIds.has(e._id)) && (
+                <Pressable onPress={markAllSeen} hitSlop={6}>
+                  <Text style={styles.markAllText}>Mark all as read</Text>
+                </Pressable>
+              )}
+            </View>
 
-            {loading ? (
+            {loading && entries.length === 0 ? (
               <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} />
             ) : (
-              <FlatList
-                data={entries}
-                keyExtractor={(item) => item._id}
-                style={{ maxHeight: 360 }}
-                renderItem={({ item }) => (
-                  <View style={styles.row}>
-                    <Text style={styles.sentence}>{renderAuditSentence(item)}</Text>
-                  </View>
-                )}
-                ItemSeparatorComponent={() => <View style={styles.separator} />}
-                ListEmptyComponent={
-                  <Text style={styles.emptyText}>Nothing new</Text>
-                }
-              />
+              <>
+                <FlatList
+                  data={entries}
+                  keyExtractor={(item) => item._id}
+                  style={{ maxHeight: 320 }}
+                  renderItem={({ item }) => {
+                    const isRead = readIds.has(item._id);
+                    const isFailure = item.outcome === 'failure';
+
+                    return (
+                      <Pressable
+                        onPress={() => markOneSeen(item._id)}
+                        style={[styles.row, !isRead && styles.unreadRow]}
+                      >
+                        <View style={styles.rowTop}>
+                          <View
+                            style={[
+                              styles.statusDot,
+                              { backgroundColor: isFailure ? colors.error : colors.success },
+                            ]}
+                          />
+                          <Text style={[styles.sentence, isRead && styles.readSentence]}>
+                            {renderAuditSentence(item, currentUserId)}
+                          </Text>
+                        </View>
+                        {(item.location || item.deviceInfo) && (
+                          <Text style={styles.meta}>
+                            {[item.location, item.deviceInfo].filter(Boolean).join(' · ')}
+                          </Text>
+                        )}
+                      </Pressable>
+                    );
+                  }}
+                  ItemSeparatorComponent={() => <View style={styles.separator} />}
+                  ListEmptyComponent={
+                    <Text style={styles.emptyText}>Nothing new</Text>
+                  }
+                />
+
+                <View style={styles.footer}>
+                  <Pressable onPress={handleNavigateToActivity} style={styles.fullActivityBtn}>
+                    <Text style={styles.fullActivityText}>See full activity</Text>
+                    <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                  </Pressable>
+                </View>
+              </>
             )}
           </Pressable>
         </Pressable>
@@ -93,7 +172,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
-  badgeText: { color: colors.white, fontSize: 10, fontWeight: '700' },
+  badgeText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: '700',
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -103,15 +186,103 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   sheet: {
-    width: 300,
+    width: 320,
     backgroundColor: colors.white,
     borderRadius: radius.md,
     padding: 16,
     gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  title: { fontSize: 16, fontWeight: '700', color: colors.textDark },
-  row: { paddingVertical: 8 },
-  sentence: { fontSize: 13, color: colors.textDark, lineHeight: 18 },
-  separator: { height: 1, backgroundColor: colors.border },
-  emptyText: { fontSize: 13, color: colors.textGrey, textAlign: 'center', paddingVertical: 20 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textDark,
+  },
+  markAllText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+
+  row: {
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: radius.sm ?? 6,
+  },
+  unreadRow: {
+    backgroundColor: 'rgba(0, 102, 255, 0.05)', // Subtle highlight for unread items
+  },
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 6,
+  },
+  sentence: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.textDark,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  readSentence: {
+    color: colors.textGrey,
+    fontWeight: '400',
+  },
+  meta: {
+    fontSize: 11,
+    color: colors.textGrey,
+    marginTop: 2,
+    paddingLeft: 14,
+  },
+  errorDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.error,
+    marginTop: 6,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: colors.textGrey,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  footer: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 10,
+    marginTop: 4,
+    alignItems: 'center',
+  },
+  fullActivityBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+  },
+  fullActivityText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
+  },
 });

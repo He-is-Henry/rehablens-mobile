@@ -24,3 +24,13 @@ export const getStaffSessionResults = async (assignmentId: string) =>
   apiClient.get<SessionResult[]>(
     `/staff/assignments/${assignmentId}/session-results`,
   );
+
+export const updateStaffAssignment = async (
+  id: string,
+  payload: Partial<
+    Pick<Assignment, "status" | "notes" | "customReps" | "customHoldSeconds">
+  >,
+) => apiClient.patch<Assignment>(`/staff/assignments/${id}`, payload);
+
+export const deleteStaffAssignment = async (id: string) =>
+  apiClient.delete(`/staff/assignments/${id}`);

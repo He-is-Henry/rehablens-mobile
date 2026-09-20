@@ -107,7 +107,6 @@ export default function HospitalDashboard() {
       <Pressable
         style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
         onPress={() => {
-          console.log(activeTab === 'Staff' ? 'Add staff' : 'Link patient');
           if (activeTab === "Staff") setShowNewstaffModal(true); else if (activeTab == "Patients") setShowLinkPatientModal(true)
         }}
       >

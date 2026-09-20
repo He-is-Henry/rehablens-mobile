@@ -5,7 +5,7 @@ import {
 } from '@/lib/hospital';
 import { useHospitalQuery } from '@/queries/hospital';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -24,11 +24,9 @@ type Props = {
   onAssignExercise(): void;
 };
 
-
-
 export default function PatientDetailModal({ link, close, onUpdated, onAssignExercise }: Props) {
   const [currentLink, setCurrentLink] = useState<Link>(link);
-  const currentStaff = currentLink.staffId as User | null;
+  const currentStaff = typeof currentLink.staffId === 'object' ? currentLink.staffId : null;
 
   const { data: staff, loading: loadingStaff } = useHospitalQuery.staff();
 
@@ -39,13 +37,6 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
 
   const { data: assignments, loading: loadingAssignments } = useHospitalQuery.assignments(patient._id);
 
-  useEffect(() => {
-    console.log(assignments)
-  }, [assignments])
-
-
-  useEffect(() => {
-  }, [assignments])
   const handleToggleVerify = async () => {
     setTogglingVerify(true);
     try {
@@ -77,13 +68,11 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
     }
   };
 
-
   return (
     <Modal transparent statusBarTranslucent animationType="fade" onRequestClose={close}>
       <Pressable style={styles.overlay} onPress={close}>
         <Pressable style={styles.card} onPress={() => { }}>
 
-          {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Patient details</Text>
             <Pressable onPress={close} hitSlop={8} style={styles.closeBtn}>
@@ -93,16 +82,17 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
 
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
-            {/* Patient info */}
             <View style={styles.infoCard}>
               <View style={styles.avatarRow}>
                 <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{patient.name[0]}</Text>
+                  <Text style={styles.avatarText}>
+                    {patient?.name ? patient.name[0].toUpperCase() : 'P'}
+                  </Text>
                 </View>
                 <View style={styles.avatarInfo}>
-                  <Text style={styles.name}>{patient.name}</Text>
-                  <Text style={styles.meta}>{patient.customId}</Text>
-                  <Text style={styles.meta}>{patient.email}</Text>
+                  <Text style={styles.name}>{patient?.name ?? 'Unknown Patient'}</Text>
+                  {patient?.customId && <Text style={styles.meta}>ID: {patient.customId}</Text>}
+                  {patient?.email && <Text style={styles.meta}>{patient.email}</Text>}
                 </View>
                 <View style={[
                   styles.verifiedBadge,
@@ -129,12 +119,13 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
               onPress={handleToggleVerify}
               disabled={togglingVerify}
             >
-              {togglingVerify
-                ? <ActivityIndicator color={colors.white} size="small" />
-                : <Text style={styles.actionBtnText}>
+              {togglingVerify ? (
+                <ActivityIndicator color={colors.white} size="small" />
+              ) : (
+                <Text style={styles.actionBtnText}>
                   {currentLink.verified ? 'Unverify patient' : 'Verify patient'}
                 </Text>
-              }
+              )}
             </Pressable>
 
             {/* Current staff */}
@@ -165,8 +156,8 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
               ) : (
                 <View style={styles.staffList}>
                   {staff
-                    .filter((s) => s._id !== (currentStaff as any)?._id)
-                    .map((s, index, arr) => (
+                    .filter((s: User) => s._id !== currentStaff?._id)
+                    .map((s: User, index: number, arr: User[]) => (
                       <Pressable
                         key={s._id}
                         style={({ pressed }) => [
@@ -181,14 +172,16 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
                           <Text style={styles.staffRowName}>{s.name}</Text>
                           <Text style={styles.staffRowMeta}>{s.customId}</Text>
                         </View>
-                        {assigningId === s._id
-                          ? <ActivityIndicator size="small" color={colors.primary} />
-                          : <Text style={styles.assignText}>Assign</Text>
-                        }
+                        {assigningId === s._id ? (
+                          <ActivityIndicator size="small" color={colors.primary} />
+                        ) : (
+                          <View style={styles.assignBadgeButton}>
+                            <Text style={styles.assignBadgeButtonText}>Assign</Text>
+                          </View>
+                        )}
                       </Pressable>
-                    ))
-                  }
-                  {staff.filter((s) => s._id !== (currentStaff as any)?._id).length === 0 && (
+                    ))}
+                  {staff.filter((s: User) => s._id !== currentStaff?._id).length === 0 && (
                     <Text style={styles.unassigned}>No other staff available</Text>
                   )}
                 </View>
@@ -203,8 +196,7 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
                 <Text style={styles.unassigned}>No assignments yet</Text>
               ) : (
                 <View style={styles.staffList}>
-
-                  {assignments.map((a, index, arr) => (
+                  {assignments.map((a: any, index: number, arr: any[]) => (
                     <Pressable
                       key={a._id}
                       style={({ pressed }) => [
@@ -216,7 +208,7 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
                         close();
                         router.push({
                           pathname: '/(hospital)/patient/assignment/[assignmentId]',
-                          params: { assignmentId: a._id },
+                          params: { assignmentId: a._id, linkId: link._id },
                         });
                       }}
                     >
@@ -226,12 +218,13 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
                           {a.customReps ?? a.exerciseId?.targetReps} reps · {a.status}
                         </Text>
                       </View>
-                      <Text style={styles.assignText}>View →</Text>
+                      <Text style={styles.viewText}>View →</Text>
                     </Pressable>
                   ))}
                 </View>
               )}
             </View>
+
             <Pressable
               style={styles.actionBtnPrimary}
               onPress={() => {
@@ -360,6 +353,9 @@ const styles = StyleSheet.create({
   },
   actionBtnPrimary: {
     backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
   },
   actionBtnDanger: {
     backgroundColor: colors.error,
@@ -435,7 +431,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  staffRowInfo: { flex: 1, gap: 2 },
+  staffRowInfo: {
+    flex: 1,
+    gap: 2,
+  },
   staffRowName: {
     fontSize: typography.body,
     fontWeight: '600',
@@ -445,7 +444,20 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
     color: colors.textGrey,
   },
-  assignText: {
+  assignBadgeButton: {
+    backgroundColor: colors.primary + '15',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  assignBadgeButtonText: {
+    fontSize: typography.small,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  viewText: {
     fontSize: typography.label,
     fontWeight: '600',
     color: colors.primary,

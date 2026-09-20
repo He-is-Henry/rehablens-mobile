@@ -18,7 +18,6 @@ export default function Index() {
       return;
     }
 
-    console.log(user)
 
 
     switch (user.role) {

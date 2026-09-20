@@ -150,9 +150,7 @@ api.interceptors.response.use(
         }
 
         await token.clear();
-        console.log("Tokens cleared, redirecting...");
         router.replace("/login");
-        console.log("Redirect fired");
         return Promise.reject(refreshError);
       }
     }

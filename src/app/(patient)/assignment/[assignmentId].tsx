@@ -7,13 +7,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PatientAssignmentDetail() {
   const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
+  console.log({ assignmentId })
   const insets = useSafeAreaInsets();
-
-  const assignmentQuery =
-    usePatientQuery.assignmentById(assignmentId);
 
   const sessionsQuery =
     usePatientQuery.sessionResults(assignmentId);
+
+  const assignmentQuery =
+    usePatientQuery.assignmentById(assignmentId);
 
   const assignment = assignmentQuery.data;
 

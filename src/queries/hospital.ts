@@ -6,6 +6,7 @@ import {
   getHospitalAssignments,
   getHospitalSessionResults,
   getLinkedPatients,
+  getPatientByLinkId,
   getStaffById,
 } from "@/lib/hospital";
 
@@ -20,6 +21,12 @@ export const useHospitalQuery = {
     useQuery<Link[]>({
       key: "/hospital/patient",
       fetcher: getAllPatients,
+    }),
+
+  patientByLinkId: (linkId: string) =>
+    useQuery<Link>({
+      key: `/hospital/patient/${linkId}`,
+      fetcher: () => getPatientByLinkId(linkId),
     }),
 
   assignments: (patientId?: string) =>

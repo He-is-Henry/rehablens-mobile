@@ -12,5 +12,12 @@ export const useAuditQuery = {
     useQuery<{ count: number }>({
       key: "/activity/unseen-count",
       fetcher: getUnseenCount,
+      pollInterval: 30000,
+    }),
+
+  allActivity: (limit = 50) =>
+    useQuery<AuditLogEntry[]>({
+      key: `/activity?limit=${limit}`,
+      fetcher: () => getActivity({ limit }),
     }),
 };

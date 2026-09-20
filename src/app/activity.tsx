@@ -1,13 +1,17 @@
 import { colors, spacing, typography } from '@/constants/theme';
+import { useAuth } from '@/context/auth.context';
+import { useRefresh } from '@/hooks/useRefresh';
 import { getActivity } from '@/lib/audit';
 import { renderAuditSentence } from '@/lib/audit-sentence';
+import { useAuditQuery } from '@/queries/audit';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -16,25 +20,27 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ActivityScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const currentUserId = user?._id;
+
+  const {
+    data: queryEntries,
+    loading,
+    refreshData,
+  } = useAuditQuery.allActivity(30);
+
   const [entries, setEntries] = useState<AuditLogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-  const loadInitial = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getActivity({ limit: 30 });
-      setEntries(data);
-      setHasMore(data.length === 30);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { refreshing, onRefreshControl } = useRefresh(refreshData);
 
   useEffect(() => {
-    loadInitial();
-  }, [loadInitial]);
+    if (queryEntries) {
+      setEntries(queryEntries);
+      setHasMore(queryEntries.length === 30);
+    }
+  }, [queryEntries]);
 
   const loadMore = async () => {
     if (loadingMore || !hasMore || entries.length === 0) return;
@@ -59,7 +65,7 @@ export default function ActivityScreen() {
         <View style={{ width: 22 }} />
       </View>
 
-      {loading ? (
+      {loading && entries.length === 0 ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
         </View>
@@ -73,13 +79,20 @@ export default function ActivityScreen() {
               <View
                 style={[
                   styles.dot,
-                  { backgroundColor: item.outcome === 'failure' ? colors.error : colors.success },
+                  {
+                    backgroundColor:
+                      item.outcome === 'failure' ? colors.error : colors.success,
+                  },
                 ]}
               />
               <View style={styles.rowContent}>
-                <Text style={styles.sentence}>{renderAuditSentence(item)}</Text>
+                <Text style={styles.sentence}>
+                  {renderAuditSentence(item, currentUserId)}
+                </Text>
                 <Text style={styles.time}>
                   {new Date(item.createdAt).toLocaleString()}
+                  {item.location ? ` · ${item.location}` : ''}
+                  {item.deviceInfo ? ` · ${item.deviceInfo}` : ''}
                 </Text>
               </View>
             </View>
@@ -87,6 +100,14 @@ export default function ActivityScreen() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefreshControl}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
           ListEmptyComponent={
             <View style={styles.center}>
               <Text style={styles.emptyText}>No activity yet</Text>
@@ -94,7 +115,10 @@ export default function ActivityScreen() {
           }
           ListFooterComponent={
             loadingMore ? (
-              <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+              <ActivityIndicator
+                color={colors.primary}
+                style={{ marginVertical: spacing.md }}
+              />
             ) : null
           }
         />
@@ -118,7 +142,12 @@ const styles = StyleSheet.create({
     fontSize: typography.subheading,
     fontWeight: '700',
   },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: spacing.xl },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: spacing.xl,
+  },
   list: { padding: spacing.lg },
   row: {
     flexDirection: 'row',

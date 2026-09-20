@@ -205,11 +205,15 @@ function PreStartScreen({
         </View>
       </ScrollView>
 
-      <View style={[styles.preStartFooter, { paddingBottom: insets.bottom + spacing.md }]}>
+      {assignment.status !== 'active' ? <View style={styles.blockedNotice}>
+        <Text style={styles.blockedText}>
+          This exercise is currently {assignment.status} and can't be started.
+        </Text>
+      </View> : <View style={[styles.preStartFooter, { paddingBottom: insets.bottom + spacing.md }]}>
         <Pressable style={({ pressed }) => [styles.startBtn, pressed && { opacity: 0.85 }]} onPress={onStart}>
           <Text style={styles.startBtnText}>Start exercise</Text>
         </Pressable>
-      </View>
+      </View>}
     </View>
   );
 }
@@ -1063,5 +1067,19 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: '600',
     color: colors.textDark,
+  },
+  blockedNotice: {
+    backgroundColor: colors.textGrey + '12',
+    borderRadius: radius.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.textGrey + '30',
+    alignItems: 'center',
+  },
+  blockedText: {
+    fontSize: typography.body,
+    color: colors.textGrey,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

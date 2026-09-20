@@ -1,18 +1,24 @@
 import AssignmentSessionsView from '@/components/AssignmentSessionsView';
 import { colors, spacing } from '@/constants/theme';
+import { useRefresh } from '@/hooks/useRefresh';
 import { useStaffQuery } from '@/queries/staff';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function StaffAssignmentScreen() {
-  const { assignmentId, patientId } = useLocalSearchParams<{ assignmentId: string, patientId: string }>();
+  const { assignmentId } = useLocalSearchParams<{ assignmentId: string; patientId: string }>();
   const insets = useSafeAreaInsets();
 
   const assignment = useStaffQuery.patientAssignmentById(assignmentId);
+  const sessions = useStaffQuery.assignmentSessionResults(assignmentId);
 
-  const sessions = useStaffQuery.assignmentSessionResults(assignmentId)
+  const refreshData = async () => {
+    await assignment.refreshData();
+    await sessions.refreshData();
+  };
 
+  const { refreshing, onRefreshControl } = useRefresh(refreshData);
 
   return (
     <View style={styles.container}>
@@ -23,12 +29,17 @@ export default function StaffAssignmentScreen() {
         <Text style={styles.headerTitle}>Assignment details</Text>
         <View style={{ width: 48 }} />
       </View>
+
       <AssignmentSessionsView
         assignment={assignment.data}
         sessions={sessions.data ?? []}
         loading={sessions.loading || assignment.loading}
+        canEdit={true}
+        role="staff"
+        refreshing={refreshing}
+        onRefresh={onRefreshControl}
+        onDeleteSuccess={() => router.back()}
       />
-
     </View>
   );
 }
@@ -36,7 +47,7 @@ export default function StaffAssignmentScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background
+    backgroundColor: colors.background,
   },
   header: {
     backgroundColor: colors.primaryDark,
@@ -50,21 +61,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '500',
-    width: 48
+    width: 48,
   },
   headerTitle: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',
     flex: 1,
-    textAlign: 'center'
+    textAlign: 'center',
   },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-    width: 48,
-    textAlign: 'right'
-  },
-
 });

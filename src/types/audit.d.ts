@@ -21,4 +21,7 @@ type AuditLogEntry = {
   note?: string;
   seenBy: string[];
   createdAt: string;
+  ipAddress: string;
+  deviceInfo: string;
+  location: string;
 };

@@ -78,7 +78,7 @@ export const getHospitalAssignments = async (patientId?: string) =>
 export const getHospitalAssignmentById = async (id: string) =>
   apiClient.get<Assignment>(`/hospital/assignment/${id}`);
 
-export const updateAssignment = async (
+export const updateHospitalAssignment = async (
   id: string,
   payload: Partial<
     Pick<Assignment, "status" | "notes" | "customReps" | "customHoldSeconds">
@@ -89,3 +89,6 @@ export const getHospitalSessionResults = async (assignmentId: string) =>
   apiClient.get<SessionResult[]>(
     `/hospital/assignment/${assignmentId}/session-results`,
   );
+
+export const deleteHospitalAssignment = async (id: string) =>
+  apiClient.delete<Assignment>(`/hospital/assignment/${id}`);

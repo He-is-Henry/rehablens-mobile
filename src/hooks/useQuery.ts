@@ -4,7 +4,11 @@ import createStorage from "@/lib/storage";
 import { useEffect, useState } from "react";
 import Toast from "react-native-toast-message";
 
-export function useQuery<T extends object>({ key, fetcher }: Query<T>) {
+export function useQuery<T extends object>({
+  key,
+  fetcher,
+  pollInterval,
+}: Query<T>) {
   const [loading, setLoading] = useState<boolean>(true);
   const [data, setData] = useState<T | null>(null);
 
@@ -12,15 +16,18 @@ export function useQuery<T extends object>({ key, fetcher }: Query<T>) {
   const { isOnline } = useNetwork();
 
   const getCachedData = async () => {
-    console.log("Getting cached data...");
-    const storage = requireStorage();
+    try {
+      const storage = requireStorage();
 
-    const cachedData = await storage.get<T>(key);
+      const cachedData = await storage.get<T>(key);
 
-    if (cachedData) {
-      setData(cachedData.data);
-      // if cache is available, let app show data, and silently refresh
-      setLoading(false);
+      if (cachedData) {
+        setData(cachedData.data);
+        // if cache is available, let app show data, and silently refresh
+        setLoading(false);
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -30,8 +37,6 @@ export function useQuery<T extends object>({ key, fetcher }: Query<T>) {
   };
 
   const updateData = (newData: NewData<T>): T => {
-    console.log("Updating cache");
-
     const newDataValue =
       typeof newData === "function"
         ? (newData as (prev: T | null) => T)(data)
@@ -42,8 +47,7 @@ export function useQuery<T extends object>({ key, fetcher }: Query<T>) {
     return newDataValue;
   };
 
-  const getFreshData = async () => {
-    console.log("Getting fresh data");
+  const getFreshData = async (showError = false) => {
     if (!isOnline)
       return Toast.show({
         type: "error",
@@ -58,11 +62,12 @@ export function useQuery<T extends object>({ key, fetcher }: Query<T>) {
       setData(resData);
       setCachedData(resData);
     } catch (e: any) {
-      Toast.show({
-        type: "error",
-        text1: "Couldn't load data",
-        text2: e.message,
-      });
+      if (showError)
+        Toast.show({
+          type: "error",
+          text1: "Couldn't load data",
+          text2: e.message,
+        });
     } finally {
       setLoading(false);
     }
@@ -79,14 +84,21 @@ export function useQuery<T extends object>({ key, fetcher }: Query<T>) {
       await getCachedData();
 
       if (isOnline) {
-        await getFreshData();
+        await getFreshData(true);
       } else {
         setLoading(false);
       }
     };
 
     runQuery();
-  }, [isOnline, user]);
+    if (pollInterval && isOnline) {
+      const intervalId = setInterval(() => {
+        getFreshData();
+      }, pollInterval);
+
+      return () => clearInterval(intervalId);
+    }
+  }, [key, isOnline, user, pollInterval]);
 
   return {
     data,
