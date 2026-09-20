@@ -37,6 +37,10 @@ const getUserAgent = (): string => {
   return `RehabLens/1.0 (${fullDevice}; ${osName} ${osVersion})`;
 };
 
+const userAgent = getUserAgent();
+
+axios.defaults.headers.common["User-Agent"] = userAgent;
+
 const processQueue = (error: unknown, accessToken?: string) => {
   queue.forEach((promise) => {
     if (error) promise.reject(error);
@@ -63,6 +67,10 @@ export const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     const online = await isNetworkAvailable();
+
+    if (config.headers) {
+      config.headers.set("User-Agent", userAgent);
+    }
 
     if (!online) {
       return Promise.reject(
@@ -111,6 +119,7 @@ api.interceptors.response.use(
         return new Promise((resolve, reject) => {
           queue.push({
             resolve: (accessToken: string) => {
+              originalRequest.headers.set("User-Agent", userAgent);
               originalRequest.headers.Authorization = `Bearer ${accessToken}`;
               resolve(api(originalRequest));
             },
@@ -131,8 +140,8 @@ api.interceptors.response.use(
 
         const { accessToken, refreshToken: newRefresh } = res.data;
 
-        token.setAccess(accessToken);
-        token.setRefresh(newRefresh);
+        await token.setAccess(accessToken);
+        await token.setRefresh(newRefresh);
 
         isRefreshing = false;
 
