@@ -58,8 +58,7 @@
           "cameraPermissionText": "RehabLens needs camera access to track your exercise form in real time.",
           "enableCodeScanner": false
         }
-      ],
-      "./plugins/withPoseDetectionFix.js"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

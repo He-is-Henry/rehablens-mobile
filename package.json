@@ -30,7 +30,6 @@
     "expo-system-ui": "~57.0.3",
     "expo-updates": "~57.0.21",
     "expo-web-browser": "~57.0.2",
-    "patch-package": "^8.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -47,9 +46,12 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "patch-package": "^8.0.1",
+    "postinstall-postinstall": "^2.1.0",
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "start": "expo start",
     "bump": "node scripts/bump.js",
     "bump:patch": "node scripts/bump.js patch",
