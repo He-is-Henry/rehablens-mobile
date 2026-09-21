@@ -1,14 +1,18 @@
-﻿import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+﻿import { colors, spacing, typography } from '@/constants/theme';
 import Constants from 'expo-constants';
-import { colors, spacing, typography } from '@/constants/theme';
+import { StyleSheet, Text, View } from 'react-native';
 
 export default function VersionFooter() {
-  const version = Constants.expoConfig?.version ?? '1.0.0';
+  const version = Constants.expoConfig?.version ?? '1.1.0';
+  // Uncomment when you release your first OTA update:
+  // const otaVersion = Constants.expoConfig?.extra?.otaVersion;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>RehabLens v{version}</Text>
+      <Text style={styles.text}>
+        RehabLens v{version}
+        {/* {otaVersion ? ` · ${otaVersion}` : ''} */}
+      </Text>
     </View>
   );
 }

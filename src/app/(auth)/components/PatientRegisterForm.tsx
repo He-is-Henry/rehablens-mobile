@@ -30,6 +30,7 @@ export default function PatientRegisterForm() {
   const [hospitalQuery, setHospitalQuery] = useState('');
   const [hospitalResults, setHospitalResults] = useState<HospitalResult[]>([]);
   const [selectedHospital, setSelectedHospital] = useState<HospitalResult | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [searching, setSearching] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -66,6 +67,15 @@ export default function PatientRegisterForm() {
   const handleSubmit = async () => {
     if (!name || !email || !password || !selectedHospital) {
       Toast.show({ type: 'error', text1: 'All fields are required' });
+      return;
+    }
+
+    if (!agreedToTerms) {
+      Toast.show({
+        type: 'error',
+        text1: 'Terms & Privacy Policy',
+        text2: 'You must accept the terms to create an account',
+      });
       return;
     }
 
@@ -196,6 +206,33 @@ export default function PatientRegisterForm() {
         )}
       </InputGroup>
 
+      {/* Terms & Privacy Checkbox */}
+      <View style={styles.termsRow}>
+        <Pressable
+          style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}
+          onPress={() => setAgreedToTerms(!agreedToTerms)}
+          hitSlop={8}
+        >
+          {agreedToTerms && <Ionicons name="checkmark" size={14} color={colors.white} />}
+        </Pressable>
+        <Text style={styles.termsText}>
+          I agree to the{' '}
+          <Text
+            style={styles.termsLink}
+            onPress={() => router.push('/(auth)/terms')}
+          >
+            Terms of Service
+          </Text>{' '}
+          and{' '}
+          <Text
+            style={styles.termsLink}
+            onPress={() => router.push('/(auth)/privacy')}
+          >
+            Privacy Policy
+          </Text>
+        </Text>
+      </View>
+
       <Pressable
         style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
         onPress={handleSubmit}
@@ -322,6 +359,36 @@ const styles = StyleSheet.create({
   },
   changeText: {
     fontSize: typography.small,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  termsText: {
+    flex: 1,
+    fontSize: typography.small,
+    color: colors.textGrey,
+    lineHeight: 18,
+  },
+  termsLink: {
     color: colors.primary,
     fontWeight: '600',
   },

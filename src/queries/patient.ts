@@ -34,10 +34,7 @@ export const usePatientQuery = {
   sessionResults: (assignmentId: string) =>
     useQuery<SessionResult[]>({
       key: `/patient/session-results/${assignmentId}`,
-      fetcher: () => {
-        console.log("Fetcher called with ID:", assignmentId);
-        return getPatientSessionResultsByAssignment(assignmentId);
-      },
+      fetcher: () => getPatientSessionResultsByAssignment(assignmentId),
     }),
 
   allSessionResults: () =>

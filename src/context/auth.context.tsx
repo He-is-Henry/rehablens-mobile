@@ -1,5 +1,6 @@
 import { deleteAccount as apiDeleteAccount } from "@/lib/auth";
 import { api } from "@/lib/axios";
+import { syncPushToken } from "@/lib/notifications";
 import createStorage from "@/lib/storage";
 import token from "@/lib/token";
 import { AxiosError } from "axios";
@@ -110,6 +111,11 @@ export const AuthProvider = ({ children }: Props) => {
         profileRes.sessions
       );
 
+      const activeSession = profileRes.sessions.find(s => s.currentDevice);
+
+      console.log("Current token: ", activeSession?.pushToken)
+      syncPushToken(activeSession?.pushToken)
+
     } catch (err) {
       console.error(
         "AUTH PROFILE: fetch failed:",
@@ -164,7 +170,6 @@ export const AuthProvider = ({ children }: Props) => {
       "user",
       userData
     );
-
 
     setLoading(false);
 

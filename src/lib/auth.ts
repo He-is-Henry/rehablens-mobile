@@ -17,8 +17,14 @@ interface GenericRes {
   message: string;
 }
 
-export const login = async (email: string, password: string) =>
-  apiClient.post<LoginRes>("auth/login", { email, password });
+export const login = async (
+  email: string,
+  password: string,
+  pushToken?: string,
+) => apiClient.post<LoginRes>("auth/login", { email, password, pushToken });
+
+export const patchToken = async (pushToken: string) =>
+  apiClient.patch<Session>("auth/session/patch-token", { pushToken });
 
 export const logout = async () => {
   const refreshToken = await token.getRefresh();
@@ -58,8 +64,11 @@ export const changePassword = async (
     newPassword,
   });
 
-export const recoverAccount = async (email: string, password: string) =>
-  apiClient.post<LoginRes>("auth/recover", { email, password });
+export const recoverAccount = async (
+  email: string,
+  password: string,
+  pushToken?: string,
+) => apiClient.post<LoginRes>("auth/recover", { email, password, pushToken });
 
 export const deleteAccount = async () =>
   apiClient.delete<GenericRes>("auth/delete");

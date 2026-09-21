@@ -13,6 +13,7 @@ export default function RegisterScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('Patient');
   const insets = useSafeAreaInsets();
 
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + spacing.md }]}>
 

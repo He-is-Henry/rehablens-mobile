@@ -1,6 +1,7 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
 import { login, recoverAccount } from '@/lib/auth';
+import { getPushToken } from '@/lib/notifications';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -41,7 +42,8 @@ export default function LoginScreen() {
     setCanRecover(false);
 
     try {
-      const res = await login(email, password);
+      const pushToken = await getPushToken()
+      const res = await login(email, password, pushToken);
       setAuth(res.accessToken, res.refreshToken, res.user);
       router.replace('/');
     } catch (err: any) {
@@ -63,7 +65,8 @@ export default function LoginScreen() {
     setError('');
 
     try {
-      const res = await recoverAccount(email, password);
+      const pushToken = await getPushToken()
+      const res = await recoverAccount(email, password, pushToken);
 
       setAuth(res.accessToken, res.refreshToken, res.user);
       router.replace('/');

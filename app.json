@@ -2,13 +2,13 @@
   "expo": {
     "name": "RehabLens",
     "slug": "rehablens",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "rehablens",
     "userInterfaceStyle": "automatic",
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "updates": {
       "url": "https://u.expo.dev/2673ee9d-8978-41f7-ba4b-1984576901dc"
@@ -17,9 +17,11 @@
       "icon": "./assets/images/icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "RehabLens needs camera access to track your exercise form in real time."
-      }
+      },
+      "buildNumber": "2"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FAFAF8",
         "foregroundImage": "./assets/images/icon.png"
@@ -29,7 +31,8 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS"
-      ]
+      ],
+      "versionCode": 2
     },
     "web": {
       "output": "static",

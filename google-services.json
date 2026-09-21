@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "514710821079",
+    "project_id": "rehab-lens",
+    "storage_bucket": "rehab-lens.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:514710821079:android:7fb5f6b12019ac6d8f7892",
+        "android_client_info": {
+          "package_name": "com.olanrewajubasit.rehablens"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDhBlmwCxDwls4f8ldSyOWs07hqHKm_Zc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:514710821079:android:a59e36718d31efc88f7892",
+        "android_client_info": {
+          "package_name": "com.olanrewajubasit.rehablens.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDhBlmwCxDwls4f8ldSyOWs07hqHKm_Zc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

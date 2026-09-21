@@ -6,6 +6,7 @@ interface Session {
   createdAt: string;
   updatedAt: string;
   currentDevice?: boolean;
+  pushToken?: string;
 }
 
 interface RefreshResponse {
