@@ -27,13 +27,17 @@ export function OutdatedBanner({ inline = false }: Props) {
   const insets = useSafeAreaInsets();
   const { user, requireStorage } = useAuth();
 
-  const storage = requireStorage();
 
   useEffect(() => {
     if (inline || !config.isOutdated || !user) return;
 
     checkSnoozeStatus();
   }, [inline, user?._id]);
+
+  if (!config.isOutdated || !user) return null;
+
+
+  const storage = requireStorage();
 
   const checkSnoozeStatus = async () => {
     try {
@@ -74,7 +78,6 @@ export function OutdatedBanner({ inline = false }: Props) {
     }
   };
 
-  if (!config.isOutdated || !user) return null;
 
   // --- INLINE PROFILE CARD MODE ---
   if (inline) {

@@ -5,10 +5,10 @@ import { router } from 'expo-router';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
 type Props = {
-  hospitalId: string;
+  link: Link;
 };
 
-export default function AssignmentList({ hospitalId }: Props) {
+export default function AssignmentList({ link }: Props) {
   const { data: assignments, loading } = usePatientQuery.assignments();
 
   if (loading) {
@@ -33,7 +33,7 @@ export default function AssignmentList({ hospitalId }: Props) {
         <AssignmentCard
           assignment={item}
           onPress={() =>
-            item.status === 'active'
+            item.status === 'active' && link.verified
               ? router.push(`/(patient)/exercise/${item._id}`)
               : router.push(`/(patient)/assignment/${item._id}`)
           }

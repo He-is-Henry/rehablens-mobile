@@ -79,7 +79,7 @@ export default function PatientHospitalScreen() {
             <Text style={styles.unassigned}>No staff assigned yet</Text>
           )}
         </View>
-        <AssignmentList hospitalId={link.hospitalId._id} />
+        <AssignmentList link={link} />
       </ScrollView>
     </View>
   );

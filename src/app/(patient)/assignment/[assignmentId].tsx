@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PatientAssignmentDetail() {
   const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
-  console.log({ assignmentId });
   const insets = useSafeAreaInsets();
 
   const sessionsQuery = usePatientQuery.sessionResults(assignmentId);
@@ -16,10 +15,28 @@ export default function PatientAssignmentDetail() {
   const assignment = assignmentQuery.data;
   const isActive = assignment?.status === 'active';
 
+  const hospitalId =
+    typeof assignment?.hospitalId === 'object'
+      ? assignment.hospitalId?._id
+      : assignment?.hospitalId;
+
+  const { data: link, loading: linkLoading } = usePatientQuery.hospitalById(hospitalId ?? '');
+
+  const isVerified = link?.verified ?? false;
+  const canStart = isActive && isVerified;
+
   const handleStart = () => {
+    if (!isVerified) {
+      Alert.alert(
+        'Link Unverified',
+        'Your connection to this hospital has not been verified yet. Please wait for verification before starting exercises.',
+      );
+      return;
+    }
+
     Alert.alert(
       'Start exercise?',
-      `You're about to start "${assignment?.exerciseId.name}". Make sure you're ready and have space to move.`,
+      `You're about to start "${assignment?.exerciseId?.name}". Make sure you're ready and have space to move.`,
       [
         { text: 'Not now', style: 'cancel' },
         {
@@ -39,23 +56,35 @@ export default function PatientAssignmentDetail() {
         <Text style={styles.title}>Exercise history</Text>
       </View>
 
+      {/* Unverified Warning Banner */}
+      {!linkLoading && link && !isVerified && (
+        <View style={styles.warningBanner}>
+          <Text style={styles.warningTitle}>Verification Pending</Text>
+          <Text style={styles.warningText}>
+            This hospital link is pending verification. You can view your session history, but exercise tracking is locked until verified.
+          </Text>
+        </View>
+      )}
+
       <AssignmentSessionsView
         assignment={assignmentQuery.data}
         sessions={sessionsQuery.data ?? []}
-        loading={assignmentQuery.loading || sessionsQuery.loading}
+        loading={assignmentQuery.loading || sessionsQuery.loading || linkLoading}
       />
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
         <Pressable
           style={({ pressed }) => [
             styles.startBtn,
-            !isActive && styles.disabledBtn,
-            pressed && isActive && { opacity: 0.85 },
+            !canStart && styles.disabledBtn,
+            pressed && canStart && { opacity: 0.85 },
           ]}
           onPress={handleStart}
-          disabled={!isActive}
+          disabled={!canStart}
         >
-          <Text style={styles.startBtnText}>Start again</Text>
+          <Text style={styles.startBtnText}>
+            {!isVerified ? 'Verification Pending' : 'Start Exercise'}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -72,6 +101,25 @@ const styles = StyleSheet.create({
   },
   backText: { fontSize: typography.small, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
   title: { fontSize: typography.subheading, fontWeight: '700', color: colors.white },
+  warningBanner: {
+    backgroundColor: '#fffbe3',
+    borderColor: '#ffe58f',
+    borderWidth: 1,
+    margin: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.md,
+  },
+  warningTitle: {
+    fontSize: typography.body,
+    fontWeight: '700',
+    color: '#873800',
+    marginBottom: 4,
+  },
+  warningText: {
+    fontSize: typography.small,
+    color: '#612500',
+    lineHeight: 18,
+  },
   footer: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
@@ -91,6 +139,6 @@ const styles = StyleSheet.create({
   startBtnText: {
     color: colors.white,
     fontSize: typography.body,
-    fontWeight: '700'
+    fontWeight: '700',
   },
 });
