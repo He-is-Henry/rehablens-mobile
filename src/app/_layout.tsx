@@ -1,4 +1,5 @@
 import OfflineBanner from '@/components/offlineBanner';
+import { OutdatedBanner } from '@/components/OutdatedBanner';
 import { UpdateBanner } from '@/components/UpdateBanner';
 import { AuthProvider } from '@/context/auth.context';
 import { NetworkProvider } from '@/context/network.context';
@@ -47,6 +48,7 @@ export default function RootLayout() {
         <AuthProvider>
           <StatusBar style="dark" />
           <OfflineBanner />
+          <OutdatedBanner />
           <UpdateBanner />
           <Stack screenOptions={{ headerShown: false }} />
           <Toast />
