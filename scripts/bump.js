@@ -30,6 +30,10 @@ const newVersion = `${major}.${minor}.${patch}`;
 pkg.version = newVersion;
 app.expo.version = newVersion;
 
+// Reset OTA version for the new native build
+if (!app.expo.extra) app.expo.extra = {};
+app.expo.extra.otaVersion = 0;
+
 // 2. Increment Android versionCode
 if (!app.expo.android) app.expo.android = {};
 const currentCode = app.expo.android.versionCode || 0;

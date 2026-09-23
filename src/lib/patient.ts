@@ -10,7 +10,7 @@ export const registerPatient = async (data: {
 export const getPatientHospitals = async () =>
   apiClient.get<Link[]>("/patient/hospitals");
 
-export const getPatientHospitalById = async (linkId: string) =>
+export const getPatientHospitalById = async (linkId?: string) =>
   apiClient.get<Link>(`/patient/hospitals/${linkId}`);
 
 export const getPatientAssignments = async (

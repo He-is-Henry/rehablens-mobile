@@ -15,12 +15,14 @@ export default function PatientAssignmentDetail() {
   const assignment = assignmentQuery.data;
   const isActive = assignment?.status === 'active';
 
-  const hospitalId =
-    typeof assignment?.hospitalId === 'object'
-      ? assignment.hospitalId?._id
-      : assignment?.hospitalId;
+  const { data: links, loading: linkLoading } = usePatientQuery.hospitals({ revalidate: false });
 
-  const { data: link, loading: linkLoading } = usePatientQuery.hospitalById(hospitalId ?? '');
+  const findLinkId = (assignment: Assignment | null) => {
+    const hospitalId = typeof assignment?.hospitalId === 'object' ? assignment.hospitalId?._id : assignment?.hospitalId;
+    return links?.find(l => l.hospitalId._id === hospitalId);
+  };
+
+  const link = findLinkId(assignment)
 
   const isVerified = link?.verified ?? false;
   const canStart = isActive && isVerified;

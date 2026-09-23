@@ -9,15 +9,17 @@ import {
 } from "@/lib/patient";
 
 export const usePatientQuery = {
-  hospitals: () =>
+  hospitals: (options?: { revalidate: boolean }) =>
     useQuery<Link[]>({
       key: "/patient/hospitals",
       fetcher: getPatientHospitals,
+      revalidate: options?.revalidate ?? true,
     }),
-  hospitalById: (id: string) =>
+  hospitalById: (id?: string) =>
     useQuery({
       key: `/patient/hospitals/${id}`,
-      fetcher: () => getPatientHospitalById(id),
+      enabled: !!id,
+      fetcher: () => getPatientHospitalById(id!),
     }),
   assignments: () =>
     useQuery<Assignment[]>({

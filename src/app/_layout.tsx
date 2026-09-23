@@ -7,6 +7,7 @@ import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
@@ -35,6 +36,14 @@ export default function RootLayout() {
       if (finalStatus !== 'granted') {
         console.log('Push notification permissions denied.');
         return;
+      }
+
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('general', {
+          name: "General",
+          importance: Notifications.AndroidImportance.HIGH,
+        })
+
       }
     };
 

@@ -3,17 +3,16 @@ import Constants from 'expo-constants';
 import { StyleSheet, Text, View } from 'react-native';
 
 export default function VersionFooter() {
-  const version = Constants.expoConfig?.version ?? '1.1.0';
-  // Uncomment when you release your first OTA update:
-  // const otaVersion = Constants.expoConfig?.extra?.otaVersion;
+  const version = Constants.expoConfig?.version;
+  const otaVersion = Constants.expoConfig?.extra?.otaVersion || 0;
 
   return (
     <View style={styles.container}>
       <Text style={styles.text}>
-        RehabLens v{version}
-        {/* {otaVersion ? ` · ${otaVersion}` : ''} */}
+        RehabLens v{version} · OTA {otaVersion}
       </Text>
     </View>
+
   );
 }
 

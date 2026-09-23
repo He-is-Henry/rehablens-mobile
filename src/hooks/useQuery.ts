@@ -8,28 +8,14 @@ export function useQuery<T extends object>({
   key,
   fetcher,
   pollInterval,
+  enabled = true,
+  revalidate = true,
 }: Query<T>) {
   const [loading, setLoading] = useState<boolean>(true);
   const [data, setData] = useState<T | null>(null);
 
   const { requireStorage, user } = useAuth();
   const { isOnline } = useNetwork();
-
-  const getCachedData = async () => {
-    try {
-      const storage = requireStorage();
-
-      const cachedData = await storage.get<T>(key);
-
-      if (cachedData) {
-        setData(cachedData.data);
-        // if cache is available, let app show data, and silently refresh
-        setLoading(false);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   const setCachedData = async (data: T) => {
     const storage = requireStorage();
@@ -47,18 +33,38 @@ export function useQuery<T extends object>({
     return newDataValue;
   };
 
-  const getFreshData = async (showError = false) => {
+  const getCachedData = async (): Promise<T | null> => {
+    if (!enabled) return null;
+    try {
+      const storage = requireStorage();
+      const cachedData = await storage.get<T>(key);
+      if (cachedData) {
+        setData(cachedData.data);
+        setLoading(false);
+        return cachedData.data;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return null;
+  };
+
+  const getFreshData = async (showError = false, cachedValue?: T | null) => {
+    const hasData = cachedValue !== undefined ? cachedValue : data;
+
+    if (!enabled || (!revalidate && hasData)) {
+      setLoading(false);
+      return;
+    }
     if (!isOnline)
       return Toast.show({
         type: "error",
         text1: "No internet connection",
         text2: "Please try again when you're back online",
-      }); // do not fetch is user is offline, the overhead and round trip is not needed
-    // TODO: add a queue here later
+      });
 
     try {
-      const resData = await fetcher(); // actual data of type T, returned
-
+      const resData = await fetcher();
       setData(resData);
       setCachedData(resData);
     } catch (e: any) {
@@ -81,10 +87,10 @@ export function useQuery<T extends object>({
     }
 
     const runQuery = async () => {
-      await getCachedData();
+      const cached = await getCachedData();
 
       if (isOnline) {
-        await getFreshData(true);
+        await getFreshData(true, cached); // pass it through directly, skip the stale closure entirely
       } else {
         setLoading(false);
       }
@@ -93,12 +99,11 @@ export function useQuery<T extends object>({
     runQuery();
     if (pollInterval && isOnline) {
       const intervalId = setInterval(() => {
-        getFreshData();
+        getFreshData(); // fine here — this fires well after mount, `data` closure is accurate by then
       }, pollInterval);
-
       return () => clearInterval(intervalId);
     }
-  }, [key, isOnline, user, pollInterval]);
+  }, [key, isOnline, user, pollInterval, enabled]);
 
   return {
     data,

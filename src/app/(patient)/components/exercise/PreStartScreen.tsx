@@ -1,9 +1,8 @@
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { colors, radius, spacing, typography } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, spacing, typography } from '@/constants/theme';
 import { MediaViewer } from './MediaViewer';
 
 type Props = {
@@ -23,6 +22,8 @@ export function PreStartScreen({
   const exercise = assignment?.exerciseId;
   const targetReps = assignment?.customReps ?? exercise?.targetReps ?? 10;
   const holdSeconds = assignment?.customHoldSeconds ?? exercise?.holdSeconds ?? 0;
+  const canStart = assignment.status === 'active';
+
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -77,9 +78,17 @@ export function PreStartScreen({
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-        <Pressable style={styles.startBtn} onPress={onStart}>
-          <Text style={styles.startBtnText}>Start Exercise</Text>
-        </Pressable>
+        {canStart ? (
+          <Pressable style={styles.startBtn} onPress={onStart}>
+            <Text style={styles.startBtnText}>Start Exercise</Text>
+          </Pressable>
+        ) : (
+          <View style={styles.blockedNotice}>
+            <Text style={styles.blockedText}>
+              This exercise is currently {assignment.status} and can't be started.
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -197,4 +206,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.white,
   },
+  blockedNotice: {
+    opacity: 0.4
+  },
+  blockedText: {
+    color: colors.white,
+    fontSize: typography.body
+  }
 });

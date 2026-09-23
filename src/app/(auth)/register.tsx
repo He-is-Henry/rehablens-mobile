@@ -47,12 +47,13 @@ export default function RegisterScreen() {
       }
 
       {/* Footer */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
         <Text style={styles.footerText}>Already have an account?</Text>
         <Pressable onPress={() => router.replace('/(auth)/login')}>
           <Text style={styles.footerLink}> Sign in</Text>
         </Pressable>
       </View>
+
 
     </View>
   );
@@ -114,7 +115,8 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    paddingTop: spacing.lg,
   },
   footerText: {
     fontSize: typography.small,
