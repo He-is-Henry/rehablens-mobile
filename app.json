@@ -68,7 +68,8 @@
       "router": {},
       "eas": {
         "projectId": "2673ee9d-8978-41f7-ba4b-1984576901dc"
-      }
+      },
+      "otaVersion": 1
     }
   }
 }
