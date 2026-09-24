@@ -92,3 +92,28 @@ export const getHospitalSessionResults = async (assignmentId: string) =>
 
 export const deleteHospitalAssignment = async (id: string) =>
   apiClient.delete<Assignment>(`/hospital/assignment/${id}`);
+
+export const getHospitalAssignmentSchedules = async (assignmentId: string) =>
+  apiClient.get<Schedule[]>(`/hospital/assignment/${assignmentId}/schedules`);
+
+export const createHospitalSchedules = async (
+  assignmentId: string,
+  entries: {
+    scheduledDate: string;
+    minSessions: number;
+    maxSessions: number;
+  }[],
+) =>
+  apiClient.post<Schedule[]>(`/hospital/assignment/${assignmentId}/schedules`, {
+    entries,
+  });
+
+export const updateHospitalSchedule = async (
+  scheduleId: string,
+  payload: Partial<
+    Pick<Schedule, "minSessions" | "maxSessions" | "scheduledDate">
+  >,
+) => apiClient.patch<Schedule>(`/hospital/schedules/${scheduleId}`, payload);
+
+export const deleteHospitalSchedule = async (scheduleId: string) =>
+  apiClient.delete<Schedule>(`/hospital/schedules/${scheduleId}`);

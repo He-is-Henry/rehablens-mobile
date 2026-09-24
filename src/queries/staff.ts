@@ -1,5 +1,6 @@
 import { useQuery } from "@/hooks/useQuery";
 import {
+  getStaffAssignmentSchedules,
   getStaffPatientAssignmentById,
   getStaffPatientAssignments,
   getStaffPatients,
@@ -24,7 +25,12 @@ export const useStaffQuery = {
       key: `/staff/assignments/${assignmentId}`,
       fetcher: () => getStaffPatientAssignmentById(assignmentId),
     }),
-
+  schedules: (assignmentId: string) =>
+    useQuery<Schedule[]>({
+      key: `/staff/assignment/${assignmentId}/schedules`,
+      fetcher: () => getStaffAssignmentSchedules(assignmentId),
+      enabled: !!assignmentId,
+    }),
   assignmentSessionResults: (assignmentId: string) =>
     useQuery({
       key: `/staff/assignments/${assignmentId}/session-results`,

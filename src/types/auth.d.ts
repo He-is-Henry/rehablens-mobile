@@ -32,6 +32,8 @@ interface User {
   isActive: boolean;
   isPioneer: boolean;
   mustChangePassword: boolean;
+  currentStreak: number;
+  lastCompletedDate: string;
 }
 
 type EditProfilePayload = {

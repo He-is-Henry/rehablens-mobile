@@ -1,4 +1,3 @@
-import AssignmentList from '@/app/(patient)/components/AssignmentList';
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { usePatientQuery } from '@/queries/patient';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -8,9 +7,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ScheduleList from '../components/ScheduleList';
 
 export default function PatientHospitalScreen() {
   const { linkId } = useLocalSearchParams<{ linkId: string }>();
@@ -33,7 +33,7 @@ export default function PatientHospitalScreen() {
   const staff = link.staffId as any;
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
@@ -44,7 +44,7 @@ export default function PatientHospitalScreen() {
         <Text style={styles.hospitalMeta}>{hospital?.customId}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.content}>
 
         {/* Hospital info */}
         <View style={styles.section}>
@@ -79,9 +79,17 @@ export default function PatientHospitalScreen() {
             <Text style={styles.unassigned}>No staff assigned yet</Text>
           )}
         </View>
-        <AssignmentList link={link} />
-      </ScrollView>
-    </View>
+
+        <View style={styles.section}>
+          <ScheduleList
+            hospitalId={link.hospitalId._id}
+            headerLabel="Schedule"
+            emptyLabel="No sessions scheduled"
+            emptySub="Your care team hasn't scheduled anything for this hospital yet"
+          />
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 

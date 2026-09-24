@@ -226,6 +226,9 @@ const SENTENCE_TEMPLATES: Record<string, SentenceFn> = {
   "scheduled sessions for": (log, uid) =>
     `${getActor(log, uid)} scheduled sessions for ${getAffected(log, uid)}`,
 
+  "updated a scheduled session for": (log, uid) =>
+    `${formatParty(log.actor)} updated a scheduled session for ${getAffected(log, uid)}`,
+
   "cancelled a scheduled session for": (log, uid) =>
     `${getActor(log, uid)} cancelled a scheduled session for ${getAffected(log, uid)}`,
 

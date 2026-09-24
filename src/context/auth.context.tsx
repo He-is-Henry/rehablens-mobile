@@ -10,6 +10,7 @@ import {
   ReactNode,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -34,11 +35,12 @@ export const AuthProvider = ({ children }: Props) => {
 
   const pathname = usePathname();
 
-  const globalStorage = createStorage();
 
-  const userStorage = activeUserId
-    ? createStorage(activeUserId)
-    : null
+  const globalStorage = useMemo(() => createStorage(), []);
+
+  const userStorage = useMemo(() => {
+    return activeUserId ? createStorage(activeUserId) : null;
+  }, [activeUserId]);
 
   useEffect(() => {
 
@@ -77,7 +79,11 @@ export const AuthProvider = ({ children }: Props) => {
   }, [user?.mustChangePassword, pathname]);
 
   const fetchCurrentUser = async () => {
-    if (!userStorage) throw Error('No storage available')
+    if (!userStorage) {
+      console.warn("AUTH PROFILE: userStorage not ready yet.");
+      setLoading(false);
+      return;
+    }
 
     const cachedUser =
       await userStorage.get<User>("user");
@@ -130,23 +136,16 @@ export const AuthProvider = ({ children }: Props) => {
 
 
   useEffect(() => {
-
-
-    if (!activeUserId || !userStorage) {
-      return;
-    }
-
-    if (initialized.current) {
-      return;
-    }
+    if (!activeUserId || !userStorage) return;
+    if (initialized.current) return;
 
     initialized.current = true;
 
-
-
-
-    fetchCurrentUser();
-  }, [activeUserId]);
+    fetchCurrentUser().catch((err) => {
+      console.error("AUTH PROFILE: Unhandled fetch error:", err);
+      setLoading(false);
+    });
+  }, [activeUserId, userStorage]);
 
 
   const setAuth = async (
@@ -194,22 +193,22 @@ export const AuthProvider = ({ children }: Props) => {
 
 
   const clearAuth = async () => {
-    await token.clear();
+    initialized.current = false;
 
-    if (userStorage) {
-      await userStorage.clear("user");
-      await userStorage.clear("sessions");
-      await userStorage.deleteAll()
-    }
-
-    router.replace('/login')
+    const currentStorage = userStorage;
 
     setUser(null);
     setSessions([]);
     setActiveUserId(null);
 
-    initialized.current = false;
+    router.replace('/login');
 
+    await token.clear();
+    if (currentStorage) {
+      await currentStorage.clear("user");
+      await currentStorage.clear("sessions");
+      await currentStorage.deleteAll();
+    }
   };
 
   const editProfile = async (

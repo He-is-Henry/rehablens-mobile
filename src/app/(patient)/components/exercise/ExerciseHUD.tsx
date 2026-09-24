@@ -1,12 +1,9 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = {
   countdown: number | null;
-  finished: boolean;
   targetReps: number;
   repsCompleted: number;
   primaryAngle: number | null;
@@ -21,7 +18,6 @@ type Props = {
 
 export function ExerciseHUD({
   countdown,
-  finished,
   targetReps,
   repsCompleted,
   primaryAngle,
@@ -46,23 +42,6 @@ export function ExerciseHUD({
     );
   }
 
-  if (finished) {
-    return (
-      <View style={styles.finishedOverlay}>
-        <View style={styles.finishedCard}>
-          <Ionicons name="checkmark-circle" size={48} color={colors.success} />
-          <Text style={styles.finishedTitle}>Session complete!</Text>
-          <Text style={styles.finishedSub}>
-            You completed {repsCompleted} of {targetReps} reps.
-          </Text>
-          <Pressable style={styles.doneBtn} onPress={() => router.back()}>
-            <Text style={styles.doneBtnText}>Done</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.hud, { paddingBottom: insets.bottom + spacing.sm }]}>
       <View style={styles.repsRow}>
@@ -81,8 +60,10 @@ export function ExerciseHUD({
       </View>
 
       <View style={styles.hudMain}>
-        {primaryAngle !== null && (
+        {typeof primaryAngle === 'number' && !isNaN(primaryAngle) ? (
           <Text style={styles.hudAngle}>{Math.round(primaryAngle)}°</Text>
+        ) : (
+          <Text style={styles.hudAngle}>--°</Text>
         )}
         <Text
           style={[styles.hudInstruction, { color: repStateColor[repState] }]}

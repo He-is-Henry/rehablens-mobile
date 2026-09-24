@@ -15,3 +15,15 @@ interface Hospital {
   name: string;
   email: string;
 }
+
+interface Schedule {
+  _id: string;
+  patientId: string;
+  assignmentId: Assignment;
+  scheduledDate: string; // YYYY-MM-DD
+  minSessions: number;
+  maxSessions: number;
+  completedCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}

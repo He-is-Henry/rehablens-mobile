@@ -36,12 +36,25 @@ export default function PatientLayout() {
       />
 
       <Tabs.Screen
-        name="sessions"
+        name="schedules"
         options={{
-          title: 'Sessions',
+          title: 'Schedules',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? 'calendar' : 'calendar-outline'} // ✅ Distinct session icon
+              name={focused ? 'calendar' : 'calendar-outline'}
+              size={20}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: 'Leaderboard',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'trophy' : 'trophy-outline'}
               size={20}
               color={color}
             />
@@ -50,12 +63,12 @@ export default function PatientLayout() {
       />
 
       <Tabs.Screen
-        name="exercises"
+        name="sessions"
         options={{
-          title: 'Exercises',
+          title: 'Sessions',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? 'barbell' : 'barbell-outline'}
+              name={focused ? 'time' : 'time-outline'}
               size={20}
               color={color}
             />

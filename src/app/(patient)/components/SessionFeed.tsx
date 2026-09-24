@@ -1,14 +1,12 @@
 import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePatientQuery } from '@/queries/patient';
-import { router } from 'expo-router';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 export default function SessionFeed() {
   const { data: sessions, loading, refreshData: loadSessions } = usePatientQuery.allSessionResults();
 
-  const { refreshing, onRefreshControl } = useRefresh(loadSessions)
-
+  const { refreshing, onRefreshControl } = useRefresh(loadSessions);
 
   if (loading) {
     return <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />;
@@ -28,31 +26,35 @@ export default function SessionFeed() {
       keyExtractor={(item) => item._id}
       contentContainerStyle={styles.list}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefreshControl} />}
-      renderItem={({ item }) => (
-        <Pressable onPress={() => router.push(`/(patient)/assignment/${item.assignmentId._id}`)}
-          style={({ pressed }) => pressed && { opacity: 0.85 }}
-        > <View style={styles.card}>
+      renderItem={({ item }) => {
+        const exerciseName = item.assignmentId?.exerciseId?.name ?? 'Exercise';
+        const formattedDate = new Date(item.completedAt || item.createdAt).toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        return (
+          <View style={styles.card}>
             <View style={styles.row}>
               <Text style={styles.name} numberOfLines={1}>
-                {item.assignmentId.exerciseId.name}
+                {exerciseName}
               </Text>
-              <Text style={styles.date}>
-                {new Date(item.completedAt).toLocaleDateString('en-GB', {
-                  day: 'numeric', month: 'short',
-                })}
-              </Text>
+              <Text style={styles.date}>{formattedDate}</Text>
             </View>
             <Text style={styles.meta}>
               {item.repsCompleted}/{item.targetReps} reps ·{' '}
               {item.status === 'completed' ? 'Completed' : 'Abandoned'}
             </Text>
-          </View></Pressable>
-      )}
+          </View>
+        );
+      }}
       ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
     />
   );
 }
-
 
 const styles = StyleSheet.create({
   list: { paddingTop: spacing.xs },
@@ -78,18 +80,18 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: typography.small,
-    color: colors.textGrey
+    color: colors.textGrey,
   },
   meta: {
     fontSize: typography.small,
-    color: colors.textGrey
+    color: colors.textGrey,
   },
   empty: {
     paddingVertical: spacing.lg,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   emptyText: {
     fontSize: typography.small,
-    color: colors.textGrey
+    color: colors.textGrey,
   },
 });

@@ -16,31 +16,54 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RequestHospitalModal from '../components/RequestHospital';
+import ScheduleList from '../components/ScheduleList';
+import { StreakBadge } from '../components/StreakBadge';
+import { WeekCalendarStrip } from '../components/WeekCalendar';
 
 export default function PatientDashboard() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const { data: links, loading, refreshData, setData: setLinks } = usePatientQuery.hospitals()
-  const [modalVisible, setModalVisible] = useState(false);
+  const { data: links, loading: linksLoading, refreshData: refreshLinks, setData: setLinks } = usePatientQuery.hospitals(); const [modalVisible, setModalVisible] = useState(false);
+
+  const today = new Date();
+  const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  // Calendar State
+  const [selectedDate, setSelectedDate] = useState<string>(todayString);
+
+  const isTodaySelected = selectedDate === todayString;
 
 
-  const { refreshing, onRefreshControl } = useRefresh(refreshData);
+  const { data: schedules, loading: schedulesLoading, refreshData: refreshSchedules } = usePatientQuery.schedules(
+    { date: selectedDate },
+    true
+  );
+
+  const isGlobalLoading = linksLoading || (schedulesLoading && !schedules);
+
+  const handleGlobalRefresh = async () => {
+    await Promise.all([refreshLinks(), refreshSchedules()]);
+  };
+
+  const { refreshing, onRefreshControl } = useRefresh(handleGlobalRefresh);
 
 
-  const addNewHospital = async (newLink: Link) => {
-    setLinks((p) => [...(p ?? []), newLink])
-  }
-
+  const addNewHospital = async (newLink: any) => {
+    setLinks((p) => [...(p ?? []), newLink]);
+  };
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.headerRow}>
+
           <View>
-            <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0]} 👋</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0]} 👋</Text>
+              <StreakBadge streak={user?.currentStreak ?? 0} />
+            </View>
             <Text style={styles.meta}>{user?.customId}</Text>
           </View>
-
           <View style={styles.headerActions}>
             <NotificationBell />
             <Pressable
@@ -53,8 +76,8 @@ export default function PatientDashboard() {
         </View>
       </View>
 
-      {/* List */}
-      {loading ? (
+      {/* Main Content List */}
+      {isGlobalLoading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -71,7 +94,27 @@ export default function PatientDashboard() {
             />
           }
           ListHeaderComponent={
-            <Text style={styles.listHeader}>Your hospitals</Text>
+            <>
+              {/* Interactive Calendar Strip */}
+              <WeekCalendarStrip
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+              />
+
+              {/* Dynamic Daily Schedule Section */}
+              <View style={styles.todaySection}>
+                <ScheduleList
+                  schedules={schedules ?? []}
+                  loading={schedulesLoading}
+                  onRefresh={handleGlobalRefresh}
+                  date={selectedDate}
+                  headerLabel={isTodaySelected ? "Today" : `Schedule for ${selectedDate}`}
+                  emptyLabel={isTodaySelected ? "Nothing scheduled today" : "No sessions scheduled"}
+                  emptySub={isTodaySelected ? "Enjoy your rest day 🎉" : "No active exercises assigned for this date"} />
+              </View>
+
+              <Text style={styles.listHeader}>Your hospitals</Text>
+            </>
           }
           ListEmptyComponent={
             <View style={styles.empty}>
@@ -138,16 +181,14 @@ export default function PatientDashboard() {
                   </View>
                 </View>
 
-                {staff && (
+                {staff ? (
                   <View style={styles.staffRow}>
                     <Text style={styles.staffLabel}>Your staff</Text>
                     <Text style={styles.staffName}>
                       {staff.name} · {staff.customId}
                     </Text>
                   </View>
-                )}
-
-                {!staff && (
+                ) : (
                   <Text style={styles.unassigned}>No staff assigned yet</Text>
                 )}
               </Pressable>
@@ -314,5 +355,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  todaySection: {
+    marginBottom: spacing.lg,
   },
 });

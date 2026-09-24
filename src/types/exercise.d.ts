@@ -113,9 +113,25 @@ type SessionResult = {
   targetReps: number;
   durationSeconds: number;
   status: "completed" | "abandoned";
+  createdAt: Date;
   completedAt: string;
 };
 
 type PopulatedSessionResult = SessionResult & {
   assignmentId: Assignment;
 };
+
+type LeaderboardEntry = {
+  patientId: string;
+  name: string;
+  customId: string;
+  points: number;
+};
+
+type LeaderboardHospital = {
+  hospitalId: string;
+  hospitalName: string;
+  patients: LeaderboardEntry[];
+};
+
+type Leaderboard = LeaderboardHospital[];

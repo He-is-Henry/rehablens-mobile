@@ -86,11 +86,13 @@ export function useQuery<T extends object>({
       return;
     }
 
+    setLoading(true);
+
     const runQuery = async () => {
       const cached = await getCachedData();
 
       if (isOnline) {
-        await getFreshData(true, cached); // pass it through directly, skip the stale closure entirely
+        await getFreshData(true, cached);
       } else {
         setLoading(false);
       }
@@ -99,11 +101,11 @@ export function useQuery<T extends object>({
     runQuery();
     if (pollInterval && isOnline) {
       const intervalId = setInterval(() => {
-        getFreshData(); // fine here — this fires well after mount, `data` closure is accurate by then
+        getFreshData();
       }, pollInterval);
       return () => clearInterval(intervalId);
     }
-  }, [key, isOnline, user, pollInterval, enabled]);
+  }, [key, isOnline, user, pollInterval, enabled, revalidate]);
 
   return {
     data,

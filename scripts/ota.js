@@ -5,6 +5,7 @@ const spawn = require("cross-spawn"); // npm install cross-spawn
 const readline = require("readline");
 
 const appConfigPath = path.join(__dirname, "../app.json");
+const runtimeConfigPath = path.join(__dirname, "../src/config.ts");
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -26,6 +27,7 @@ class StageError extends Error {
 
 const VALID_PLATFORMS = ["android", "ios", "all"];
 const VALID_ENVIRONMENTS = ["development", "preview", "production"];
+const OTA_VERSION_REGEX = /(otaVersion:\s*)(\d+)/;
 
 async function runOta() {
   let otaPublished = false;
@@ -38,16 +40,18 @@ async function runOta() {
   let branch;
   let platform;
   let environment;
-  let appConfig;
+  let runtimeConfigSource;
 
   try {
     console.log("\n========================================");
     console.log("       🚀 REHABLENS OTA DEPLOYER        ");
     console.log("========================================\n");
 
-    // 1. Read app.json metadata
+    // 1. Read app.json purely for the native version string (unrelated to
+    // OTA versioning now — otaVersion no longer lives in app.json).
     try {
-      appConfig = JSON.parse(fs.readFileSync(appConfigPath, "utf8"));
+      const appConfig = JSON.parse(fs.readFileSync(appConfigPath, "utf8"));
+      currentVersion = appConfig.expo.version || "1.1.0";
     } catch (err) {
       throw new StageError(
         "config-read",
@@ -56,8 +60,28 @@ async function runOta() {
       );
     }
 
-    currentVersion = appConfig.expo.version || "1.1.0";
-    const currentOtaVersion = appConfig.expo.extra?.otaVersion || 0;
+    // 2. Read src/config.ts and extract the current otaVersion via regex —
+    // it's a plain TS source file, not JSON, so no JSON.parse here.
+    try {
+      runtimeConfigSource = fs.readFileSync(runtimeConfigPath, "utf8");
+    } catch (err) {
+      throw new StageError(
+        "runtime-config-read",
+        `Could not read src/config.ts at ${runtimeConfigPath}`,
+        err,
+      );
+    }
+
+    const match = runtimeConfigSource.match(OTA_VERSION_REGEX);
+    if (!match) {
+      throw new StageError(
+        "runtime-config-read",
+        `Could not find an "otaVersion: <number>" field in src/config.ts. ` +
+          `Add it once manually (e.g. "otaVersion: 0,") then re-run.`,
+      );
+    }
+
+    const currentOtaVersion = parseInt(match[2], 10);
     previousOtaVersion = currentOtaVersion; // snapshot, used to revert if EAS publish fails
     nextOtaVersion = currentOtaVersion + 1;
     otaVersionTag = `v${currentVersion}-ota.${nextOtaVersion}`;
@@ -66,7 +90,7 @@ async function runOta() {
       `📌 Native Version: ${currentVersion} | OTA: ${nextOtaVersion} | Target Tag: ${otaVersionTag}`,
     );
 
-    // 2. Prompt for update description, branch, platform, and environment
+    // 3. Prompt for update description, branch, platform, and environment
     message = await askQuestion(
       "❯ Enter update description (e.g., added notifications): ",
     );
@@ -110,44 +134,36 @@ async function runOta() {
 
     rl.close();
 
-    // Give stdin back to the process cleanly so the child can inherit
-    // a normal TTY (readline puts stdin in a mode that can confuse
-    // a child's raw-mode prompts if not released first).
     if (process.stdin.isTTY) {
       process.stdin.setRawMode(false);
     }
     process.stdin.pause();
 
-    // 3. Write the new otaVersion into app.json BEFORE publishing.
-    // `eas update` snapshots the current app.json into the update's
-    // manifest at publish time — writing this after publish (the old
-    // order) meant the published manifest always carried the STALE
-    // otaVersion, which is why the in-app footer stayed at 0.
+    // 4. Write the bumped otaVersion into src/config.ts BEFORE publishing —
+    // it must be part of the JS bundle that eas update packages. Unlike
+    // the old app.json approach, this file is plain JS: it's naturally
+    // bundled as-is, and it's outside fingerprint's hashed scope entirely
+    // (fingerprint only hashes the "expo" key in app.json/eas.json, plus
+    // native dirs/plugins) — so this can never perturb the runtime version.
     try {
-      appConfig.expo.extra = {
-        ...appConfig.expo.extra,
-        otaVersion: nextOtaVersion,
-      };
-      fs.writeFileSync(
-        appConfigPath,
-        JSON.stringify(appConfig, null, 2) + "\n",
+      const updatedSource = runtimeConfigSource.replace(
+        OTA_VERSION_REGEX,
+        `$1${nextOtaVersion}`,
       );
+      fs.writeFileSync(runtimeConfigPath, updatedSource);
       configWritten = true;
-      console.log(`📝 Updated app.json: otaVersion = ${nextOtaVersion}`);
+      console.log(`📝 Updated src/config.ts: otaVersion = ${nextOtaVersion}`);
     } catch (err) {
       throw new StageError(
         "config-write",
-        `Failed to write app.json before publishing: ${err.message}`,
+        `Failed to write src/config.ts before publishing: ${err.message}`,
         err,
       );
     }
 
-    // 4. Run EAS Update — fully interactive (arrow keys, branch picker, etc. all work)
+    // 5. Run EAS Update — fully interactive (arrow keys, branch picker, etc. all work)
     console.log("\n📤 Launching EAS Update...\n");
 
-    // --environment forces EAS to pull EXPO_PUBLIC_* vars from EAS-hosted
-    // environment variables instead of whatever local .env happens to be
-    // present at deploy time.
     const easArgs = [
       "eas",
       "update",
@@ -166,17 +182,11 @@ async function runOta() {
     let easResult;
     try {
       easResult = await new Promise((resolve, reject) => {
-        // cross-spawn handles Windows .cmd resolution AND correct arg
-        // quoting without needing shell:true — which was the actual
-        // cause of both the EINVAL and the mangled message.
         const child = spawn("npx", easArgs, {
           stdio: "inherit",
         });
 
         child.on("error", (err) => {
-          // This fires when the OS fails to even launch the process
-          // (bad path, EINVAL, permissions) — distinct from EAS running
-          // and then failing internally.
           reject(
             new StageError(
               "eas-spawn",
@@ -197,25 +207,25 @@ async function runOta() {
       revertConfigWrite();
       throw new StageError(
         "eas-exit",
-        `EAS Update exited with code ${easResult}. app.json was reverted — nothing was published.`,
+        `EAS Update exited with code ${easResult}. src/config.ts was reverted — nothing was published.`,
       );
     }
 
     otaPublished = true;
     console.log("\n✅ EAS Update completed successfully.");
-    // From this point on, app.json's otaVersion matches what's already
-    // live in the published manifest — it must NOT be reverted even if
-    // a later step (git) fails, or the local file would lie about
-    // what's actually deployed.
+    // From this point on, src/config.ts's otaVersion matches what's
+    // already live in the published bundle — it must NOT be reverted
+    // even if a later step (git) fails, or the local file would lie
+    // about what's actually deployed.
 
-    // 5. Construct Git commit message and tag
+    // 6. Construct Git commit message and tag
     const commitScope = branch ? `ota(${branch})` : "ota";
     const commitMsg = `${commitScope}: ${message.trim()} [${otaVersionTag}] [${platform}/${environment}]`;
 
     console.log("\n🏷️  Creating Git commit and tag...");
 
     try {
-      execSync("git add app.json", { stdio: "inherit" });
+      execSync("git add src/config.ts", { stdio: "inherit" });
       execSync(`git commit -m "${commitMsg}"`, { stdio: "inherit" });
       execSync(`git tag -a "${otaVersionTag}" -m "${message.trim()}"`, {
         stdio: "inherit",
@@ -223,12 +233,12 @@ async function runOta() {
     } catch (err) {
       throw new StageError(
         "git-commit",
-        `Published OTA (app.json otaVersion=${nextOtaVersion} is correct and already live), but git commit/tag failed: ${err.message}`,
+        `Published OTA (src/config.ts otaVersion=${nextOtaVersion} is correct and already live), but git commit/tag failed: ${err.message}`,
         err,
       );
     }
 
-    // 6. Push commit and tag
+    // 7. Push commit and tag
     console.log("\n⬆️  Pushing commit and tag to remote repository...");
     try {
       execSync("git push origin HEAD --follow-tags", { stdio: "inherit" });
@@ -262,12 +272,12 @@ async function runOta() {
         "\n⚠️  IMPORTANT: The OTA was successfully published to EAS.",
       );
       console.error(
-        "   app.json's otaVersion is correct and matches what's live —",
+        "   src/config.ts's otaVersion is correct and matches what's live —",
       );
       console.error(
         "   do NOT re-run this script. Just fix and finish the git steps manually:",
       );
-      console.error(`   git add app.json`);
+      console.error(`   git add src/config.ts`);
       console.error(`   git commit -m "..."`);
       console.error(`   git tag -a "${otaVersionTag}" -m "..."`);
       console.error(`   git push origin HEAD --follow-tags`);
@@ -277,7 +287,7 @@ async function runOta() {
       console.error(
         "\nℹ️  EAS did not complete successfully — nothing was published.",
       );
-      console.error("   app.json was reverted to its previous state.");
+      console.error("   src/config.ts was reverted to its previous state.");
       if (nextOtaVersion !== undefined) {
         console.error(`   OTA ${nextOtaVersion} remains available for retry.`);
       }
@@ -289,20 +299,14 @@ async function runOta() {
   function revertConfigWrite() {
     if (!configWritten) return;
     try {
-      appConfig.expo.extra = {
-        ...appConfig.expo.extra,
-        otaVersion: previousOtaVersion,
-      };
-      fs.writeFileSync(
-        appConfigPath,
-        JSON.stringify(appConfig, null, 2) + "\n",
-      );
+      const revertedSource = runtimeConfigSource; // original, unmodified content
+      fs.writeFileSync(runtimeConfigPath, revertedSource);
       console.error(
-        `↩️  Reverted app.json otaVersion back to ${previousOtaVersion}`,
+        `↩️  Reverted src/config.ts otaVersion back to ${previousOtaVersion}`,
       );
     } catch (revertErr) {
       console.error(
-        "⚠️  Also failed to revert app.json — fix manually:",
+        "⚠️  Also failed to revert src/config.ts — fix manually:",
         revertErr.message,
       );
     }

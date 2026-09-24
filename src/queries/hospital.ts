@@ -4,6 +4,7 @@ import {
   getAllStaff,
   getHospitalAssignmentById,
   getHospitalAssignments,
+  getHospitalAssignmentSchedules,
   getHospitalSessionResults,
   getLinkedPatients,
   getPatientByLinkId,
@@ -53,6 +54,12 @@ export const useHospitalQuery = {
       fetcher: () => getLinkedPatients(undefined, staffId),
     }),
 
+  schedules: (assignmentId: string) =>
+    useQuery<Schedule[]>({
+      key: `/hospital/assignment/${assignmentId}/schedules`,
+      fetcher: () => getHospitalAssignmentSchedules(assignmentId),
+      enabled: !!assignmentId,
+    }),
   sessionResults: (assignmentId: string) =>
     useQuery({
       key: `/hospital/assignments/${assignmentId}/session-results`,

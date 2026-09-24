@@ -5,15 +5,70 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MediaViewer } from './MediaViewer';
 
+
 type Props = {
   assignment: Assignment;
+  schedule?: Schedule;
   speechEnabled: boolean;
   onToggleSpeech: () => void;
   onStart: () => void;
 };
 
+function getScheduleStartStatus(assignment: Assignment, schedule?: Schedule) {
+  if (assignment?.status !== 'active') {
+    return {
+      canStart: false,
+      reason: `This assignment is currently ${assignment?.status ?? 'inactive'}.`,
+    };
+  }
+
+  if (schedule) {
+    if ((schedule.completedCount ?? 0) >= schedule.maxSessions) {
+      return {
+        canStart: false,
+        reason: 'This session has already been completed.',
+      };
+    }
+  }
+
+  if (!schedule?.scheduledDate) {
+    return { canStart: true, reason: null };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [year, month, day] = schedule.scheduledDate.split('-').map(Number);
+
+  const schedDay = new Date(year, month - 1, day);
+
+  const diffDays = Math.round((schedDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays > 0) {
+    const formattedDate = schedDay.toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+    return {
+      canStart: false,
+      reason: `Scheduled for ${diffDays === 1 ? 'tomorrow' : formattedDate}. You can review instructions now.`,
+    };
+  }
+
+  if (diffDays < 0) {
+    return {
+      canStart: false,
+      reason: 'This session date has passed. Please check with your provider for an updated schedule.',
+    };
+  }
+
+  return { canStart: true, reason: null };
+}
+
 export function PreStartScreen({
   assignment,
+  schedule,
   speechEnabled,
   onToggleSpeech,
   onStart,
@@ -22,11 +77,12 @@ export function PreStartScreen({
   const exercise = assignment?.exerciseId;
   const targetReps = assignment?.customReps ?? exercise?.targetReps ?? 10;
   const holdSeconds = assignment?.customHoldSeconds ?? exercise?.holdSeconds ?? 0;
-  const canStart = assignment.status === 'active';
 
+  const { canStart, reason } = getScheduleStartStatus(assignment, schedule);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.closeBtn} onPress={() => router.back()}>
           <Ionicons name="close" size={24} color={colors.white} />
@@ -43,8 +99,11 @@ export function PreStartScreen({
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>{exercise?.name ?? 'Exercise'}</Text>
-        <Text style={styles.description}>{exercise?.description}</Text>
+        {exercise?.description ? (
+          <Text style={styles.description}>{exercise.description}</Text>
+        ) : null}
 
+        {/* Stats Summary */}
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
             <Text style={styles.statVal}>{targetReps}</Text>
@@ -58,6 +117,7 @@ export function PreStartScreen({
           )}
         </View>
 
+        {/* Camera Orientation Tip */}
         {exercise?.cameraOrientationTip && (
           <View style={styles.tipCard}>
             <Ionicons name="camera-outline" size={20} color={colors.primary} />
@@ -65,8 +125,10 @@ export function PreStartScreen({
           </View>
         )}
 
+        {/* Exercise Media */}
         <MediaViewer media={exercise?.media} />
 
+        {/* Instructions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Instructions</Text>
           <Text style={styles.instructionsText}>
@@ -77,16 +139,17 @@ export function PreStartScreen({
         </View>
       </ScrollView>
 
+      {/* Footer Action */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
         {canStart ? (
           <Pressable style={styles.startBtn} onPress={onStart}>
+            <Ionicons name="play" size={20} color="#000" style={{ marginRight: 6 }} />
             <Text style={styles.startBtnText}>Start Exercise</Text>
           </Pressable>
         ) : (
           <View style={styles.blockedNotice}>
-            <Text style={styles.blockedText}>
-              This exercise is currently {assignment.status} and can't be started.
-            </Text>
+            <Ionicons name="time-outline" size={20} color="rgba(255,255,255,0.7)" />
+            <Text style={styles.blockedText}>{reason}</Text>
           </View>
         )}
       </View>
@@ -199,18 +262,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingVertical: spacing.md,
     borderRadius: radius.lg,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   startBtnText: {
     fontSize: typography.body,
     fontWeight: '700',
-    color: colors.white,
+    color: '#000',
   },
   blockedNotice: {
-    opacity: 0.4
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    padding: spacing.md,
+    borderRadius: radius.lg,
   },
   blockedText: {
-    color: colors.white,
-    fontSize: typography.body
-  }
+    flex: 1,
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: typography.small,
+    lineHeight: 18,
+  },
 });

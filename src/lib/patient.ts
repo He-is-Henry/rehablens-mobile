@@ -13,24 +13,40 @@ export const getPatientHospitals = async () =>
 export const getPatientHospitalById = async (linkId?: string) =>
   apiClient.get<Link>(`/patient/hospitals/${linkId}`);
 
-export const getPatientAssignments = async (
-  hospitalId?: string,
-  status?: AssignmentStatus,
-) =>
-  apiClient.get<Assignment[]>("/patient/assignments", {
-    params: { hospitalId, status },
-  });
+export const getPatientSchedules = async (params?: {
+  date?: string;
+  cursor?: string;
+  limit?: number;
+}) => apiClient.get<Schedule[]>("/patient/schedules", { params });
 
-export const getPatientAssignmentById = async (id: string) =>
-  apiClient.get<Assignment>(`/patient/assignments/${id}`);
+export const getPatientScheduleById = async (id: string) =>
+  apiClient.get<Schedule>(`/patient/schedules/${id}`);
 
-export const createSessionResult = async (payload: {
+export const startSessionResult = async (payload: {
+  scheduleId: string;
   assignmentId: string;
-  repsCompleted: number;
-  targetReps: number;
-  durationSeconds: number;
-  status: "completed" | "abandoned";
-}) => apiClient.post<SessionResult>("/patient/session-results", payload);
+  timeZone: string;
+}) =>
+  apiClient.post<{ _id: string }>("/patient/session-results/start", payload);
+
+export const finishSessionResult = async (
+  id: string,
+  payload: {
+    repsCompleted: number;
+    durationSeconds: number;
+    status?: "completed" | "abandoned";
+    timeZone: string;
+  },
+) =>
+  apiClient.patch<{
+    session: SessionResult;
+    pointsAwarded: number;
+    newStreak: number;
+    streakExtended: boolean;
+    rankMovedUp: boolean;
+    previousRank: number;
+    newRank: number;
+  }>(`/patient/session-results/${id}/finish`, payload);
 
 export const getPatientSessionResults = async () =>
   apiClient.get<PopulatedSessionResult[]>("/patient/session-results");
@@ -41,3 +57,10 @@ export const getPatientSessionResultsByAssignment = async (
 
 export const requestHospitalLink = async (hospitalId: string) =>
   apiClient.post<Link>(`/patient/hospitals/${hospitalId}`);
+
+export const getLeaderboard = async (lifetime?: boolean) =>
+  apiClient.get<Leaderboard>("/patient/leaderboard", {
+    params: {
+      timeframe: lifetime ? "lifetime" : "weekly",
+    },
+  });

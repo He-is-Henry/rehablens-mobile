@@ -1,11 +1,7 @@
-import { colors, radius, spacing, typography } from '@/constants/theme';
-import {
-  assignStaffToPatient,
-  togglePatientVerification
-} from '@/lib/hospital';
+﻿import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useHospitalQuery } from '@/queries/hospital';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -15,213 +11,151 @@ import {
   Text,
   View,
 } from 'react-native';
-import Toast from 'react-native-toast-message';
 
 type Props = {
   link: Link;
   close(): void;
-  onUpdated(updatedLink: Link): void;
   onAssignExercise(): void;
+  onUpdated?(updatedPatient: any): void;
 };
 
-export default function PatientDetailModal({ link, close, onUpdated, onAssignExercise }: Props) {
-  const [currentLink, setCurrentLink] = useState<Link>(link);
-  const currentStaff = typeof currentLink.staffId === 'object' ? currentLink.staffId : null;
+export default function PatientDetailModal({
+  link,
+  close,
+  onAssignExercise,
+  onUpdated,
+}: Props) {
+  const patient = link.patientId;
 
-  const { data: staff, loading: loadingStaff } = useHospitalQuery.staff();
-
-  const [togglingVerify, setTogglingVerify] = useState(false);
-  const [assigningId, setAssigningId] = useState('');
-
-  const patient = currentLink.patientId;
-
-  const { data: assignments, loading: loadingAssignments } = useHospitalQuery.assignments(patient._id);
-
-  const handleToggleVerify = async () => {
-    setTogglingVerify(true);
-    try {
-      const updated = await togglePatientVerification(currentLink._id);
-      setCurrentLink(updated);
-      Toast.show({
-        type: 'success',
-        text1: updated.verified ? 'Patient verified' : 'Patient unverified',
-      });
-      onUpdated(updated);
-    } catch (e: any) {
-      Toast.show({ type: 'error', text1: 'Failed', text2: e.message });
-    } finally {
-      setTogglingVerify(false);
-    }
-  };
-
-  const handleAssign = async (staffId: string) => {
-    setAssigningId(staffId);
-    try {
-      const updated = await assignStaffToPatient(currentLink._id, staffId);
-      setCurrentLink(updated);
-      Toast.show({ type: 'success', text1: 'Staff assigned' });
-      onUpdated(updated);
-    } catch (e: any) {
-      Toast.show({ type: 'error', text1: 'Failed', text2: e.message });
-    } finally {
-      setAssigningId('');
-    }
-  };
+  const { data: assignments, loading: loadingAssignments } =
+    useHospitalQuery.assignments(patient._id);
 
   return (
-    <Modal transparent statusBarTranslucent animationType="fade" onRequestClose={close}>
+    <Modal
+      transparent
+      statusBarTranslucent
+      animationType="fade"
+      onRequestClose={close}
+    >
       <Pressable style={styles.overlay} onPress={close}>
         <Pressable style={styles.card} onPress={() => { }}>
-
           <View style={styles.header}>
             <Text style={styles.title}>Patient details</Text>
             <Pressable onPress={close} hitSlop={8} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>×</Text>
+              <Ionicons name="close" size={18} color={colors.textGrey} />
             </Pressable>
           </View>
 
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-
-            <View style={styles.infoCard}>
-              <View style={styles.avatarRow}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {patient?.name ? patient.name[0].toUpperCase() : 'P'}
-                  </Text>
-                </View>
-                <View style={styles.avatarInfo}>
-                  <Text style={styles.name}>{patient?.name ?? 'Unknown Patient'}</Text>
-                  {patient?.customId && <Text style={styles.meta}>ID: {patient.customId}</Text>}
-                  {patient?.email && <Text style={styles.meta}>{patient.email}</Text>}
-                </View>
-                <View style={[
-                  styles.verifiedBadge,
-                  currentLink.verified ? styles.verifiedBadgeActive : styles.verifiedBadgePending,
-                ]}>
-                  <Text style={[
-                    styles.verifiedBadgeText,
-                    currentLink.verified ? styles.verifiedTextActive : styles.verifiedTextPending,
-                  ]}>
-                    {currentLink.verified ? 'Verified' : 'Pending'}
-                  </Text>
-                </View>
-              </View>
+          <View style={styles.avatarRow}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{patient.name[0]}</Text>
             </View>
-
-            {/* Toggle verification */}
-            <Pressable
-              style={({ pressed }) => [
-                styles.actionBtn,
-                currentLink.verified ? styles.actionBtnDanger : styles.actionBtnPrimary,
-                pressed && { opacity: 0.85 },
-                togglingVerify && { opacity: 0.6 },
+            <View style={styles.info}>
+              <Text style={styles.name}>{patient.name}</Text>
+              <Text style={styles.meta}>{patient.customId}</Text>
+              <Text style={styles.meta}>{patient.email}</Text>
+            </View>
+            <View
+              style={[
+                styles.badge,
+                link.verified ? styles.badgeVerified : styles.badgePending,
               ]}
-              onPress={handleToggleVerify}
-              disabled={togglingVerify}
             >
-              {togglingVerify ? (
-                <ActivityIndicator color={colors.white} size="small" />
-              ) : (
-                <Text style={styles.actionBtnText}>
-                  {currentLink.verified ? 'Unverify patient' : 'Verify patient'}
-                </Text>
-              )}
-            </Pressable>
-
-            {/* Current staff */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Assigned staff</Text>
-              {currentStaff ? (
-                <View style={styles.currentStaffCard}>
-                  <View style={styles.staffAvatar}>
-                    <Text style={styles.staffAvatarText}>{currentStaff.name[0]}</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.staffName}>{currentStaff.name}</Text>
-                    <Text style={styles.staffMeta}>{currentStaff.customId}</Text>
-                  </View>
-                </View>
-              ) : (
-                <Text style={styles.unassigned}>No staff assigned yet</Text>
-              )}
-            </View>
-
-            {/* Reassign staff */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>
-                {currentStaff ? 'Reassign to' : 'Assign staff'}
+              <Text
+                style={[
+                  styles.badgeText,
+                  link.verified
+                    ? styles.badgeTextVerified
+                    : styles.badgeTextPending,
+                ]}
+              >
+                {link.verified ? 'Verified' : 'Pending'}
               </Text>
-              {loadingStaff || !staff ? (
-                <ActivityIndicator color={colors.primary} />
-              ) : (
-                <View style={styles.staffList}>
-                  {staff
-                    .filter((s: User) => s._id !== currentStaff?._id)
-                    .map((s: User, index: number, arr: User[]) => (
-                      <Pressable
-                        key={s._id}
-                        style={({ pressed }) => [
-                          styles.staffRow,
-                          pressed && { opacity: 0.7 },
-                          index < arr.length - 1 && styles.staffRowBorder,
-                        ]}
-                        onPress={() => handleAssign(s._id)}
-                        disabled={assigningId === s._id}
-                      >
-                        <View style={styles.staffRowInfo}>
-                          <Text style={styles.staffRowName}>{s.name}</Text>
-                          <Text style={styles.staffRowMeta}>{s.customId}</Text>
-                        </View>
-                        {assigningId === s._id ? (
-                          <ActivityIndicator size="small" color={colors.primary} />
-                        ) : (
-                          <View style={styles.assignBadgeButton}>
-                            <Text style={styles.assignBadgeButtonText}>Assign</Text>
-                          </View>
-                        )}
-                      </Pressable>
-                    ))}
-                  {staff.filter((s: User) => s._id !== currentStaff?._id).length === 0 && (
-                    <Text style={styles.unassigned}>No other staff available</Text>
-                  )}
-                </View>
-              )}
             </View>
+          </View>
 
-            <View style={styles.section}>
+          <View style={styles.divider} />
+
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <InfoRow
+              label="Linked since"
+              value={new Date(link.createdAt).toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+            />
+
+            <View style={styles.assignmentsSection}>
               <Text style={styles.sectionLabel}>Assignments</Text>
+
               {loadingAssignments || !assignments ? (
                 <ActivityIndicator color={colors.primary} />
               ) : assignments.length === 0 ? (
-                <Text style={styles.unassigned}>No assignments yet</Text>
+                <Text style={styles.empty}>No assignments yet</Text>
               ) : (
-                <View style={styles.staffList}>
-                  {assignments.map((a: any, index: number, arr: any[]) => (
+                assignments.map((a: any) => (
+                  <View key={a._id} style={styles.assignmentRow}>
                     <Pressable
-                      key={a._id}
-                      style={({ pressed }) => [
-                        styles.staffRow,
-                        pressed && { opacity: 0.7 },
-                        index < arr.length - 1 && styles.staffRowBorder,
-                      ]}
+                      style={styles.assignmentInfo}
                       onPress={() => {
                         close();
                         router.push({
-                          pathname: '/(hospital)/patient/assignment/[assignmentId]',
-                          params: { assignmentId: a._id, linkId: link._id },
+                          pathname:
+                            '/(hospital)/patient/assignment/[assignmentId]',
+                          params: {
+                            assignmentId: a._id,
+                            linkId: link._id,
+                          },
                         });
                       }}
                     >
-                      <View style={styles.staffRowInfo}>
-                        <Text style={styles.staffRowName}>{a.exerciseId?.name ?? 'Exercise'}</Text>
-                        <Text style={styles.staffRowMeta}>
-                          {a.customReps ?? a.exerciseId?.targetReps} reps · {a.status}
-                        </Text>
-                      </View>
-                      <Text style={styles.viewText}>View →</Text>
+                      <Text style={styles.assignmentName}>
+                        {a.exerciseId?.name ?? 'Exercise'}
+                      </Text>
+                      <Text style={styles.assignmentMeta}>
+                        {a.customReps ?? a.exerciseId?.targetReps} reps ·{' '}
+                        {a.status}
+                      </Text>
                     </Pressable>
-                  ))}
-                </View>
+
+                    <View style={styles.assignmentActions}>
+                      <Pressable
+                        style={styles.scheduleBadgeBtn}
+                        onPress={() => {
+                          close();
+                          router.push({
+                            pathname: '/(hospital)/schedules/[assignmentId]',
+                            params: { assignmentId: a._id, linkId: link._id },
+                          });
+                        }}
+                      >
+                        <Ionicons
+                          name="calendar-outline"
+                          size={14}
+                          color={colors.primary}
+                        />
+                        <Text style={styles.scheduleBadgeText}>Schedule</Text>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => {
+                          close();
+                          router.push({
+                            pathname:
+                              '/(hospital)/patient/assignment/[assignmentId]',
+                            params: {
+                              assignmentId: a._id,
+                              patientId: patient._id,
+                            },
+                          });
+                        }}
+                      >
+                        <Text style={styles.assignText}>View →</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))
               )}
             </View>
 
@@ -234,11 +168,19 @@ export default function PatientDetailModal({ link, close, onUpdated, onAssignExe
             >
               <Text style={styles.actionBtnText}>Assign exercise</Text>
             </Pressable>
-
           </ScrollView>
         </Pressable>
       </Pressable>
     </Modal>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
   );
 }
 
@@ -277,23 +219,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeBtnText: {
-    fontSize: 18,
-    lineHeight: 18,
-    color: colors.textGrey,
-    fontWeight: '600',
-  },
-  content: {
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  infoCard: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    backgroundColor: colors.white,
-  },
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -312,10 +237,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
   },
-  avatarInfo: {
-    flex: 1,
-    gap: 2,
-  },
+  info: { flex: 1, gap: 2 },
   name: {
     fontSize: typography.body,
     fontWeight: '700',
@@ -325,51 +247,34 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
     color: colors.textGrey,
   },
-  verifiedBadge: {
+  badge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
   },
-  verifiedBadgeActive: {
-    backgroundColor: colors.success + '18',
-  },
-  verifiedBadgePending: {
-    backgroundColor: colors.accent + '25',
-  },
-  verifiedBadgeText: {
-    fontSize: typography.label,
-    fontWeight: '700',
-  },
-  verifiedTextActive: {
-    color: colors.success,
-  },
-  verifiedTextPending: {
-    color: colors.accent,
-  },
-  actionBtn: {
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
+  badgeVerified: { backgroundColor: colors.success + '18' },
+  badgePending: { backgroundColor: colors.accent + '25' },
+  badgeText: { fontSize: typography.label, fontWeight: '700' },
+  badgeTextVerified: { color: colors.success },
+  badgeTextPending: { color: colors.accent },
+  divider: { height: 1, backgroundColor: colors.border },
+  scrollContent: { gap: spacing.md, paddingBottom: spacing.xl },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  actionBtnPrimary: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
+  infoLabel: {
+    fontSize: typography.small,
+    color: colors.textGrey,
+    fontWeight: '500',
   },
-  actionBtnDanger: {
-    backgroundColor: colors.error,
-    borderWidth: 1,
-    borderColor: colors.error + '30',
-  },
-  actionBtnText: {
-    fontSize: typography.body,
+  infoValue: {
+    fontSize: typography.small,
+    color: colors.textDark,
     fontWeight: '600',
-    color: colors.white,
   },
-  section: {
-    gap: spacing.sm,
-  },
+  assignmentsSection: { gap: spacing.sm },
   sectionLabel: {
     fontSize: typography.label,
     fontWeight: '700',
@@ -377,89 +282,66 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
-  currentStaffCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.md,
+  assignmentRow: {
+    padding: spacing.sm,
+    backgroundColor: colors.background,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
-    backgroundColor: colors.white,
-  },
-  staffAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  staffAvatarText: {
-    fontSize: typography.body,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  staffName: {
-    fontSize: typography.body,
-    fontWeight: '600',
-    color: colors.textDark,
-  },
-  staffMeta: {
-    fontSize: typography.small,
-    color: colors.textGrey,
-  },
-  unassigned: {
-    fontSize: typography.small,
-    color: colors.accent,
-    fontStyle: 'italic',
-  },
-  staffList: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-  },
-  staffRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: spacing.md,
-    backgroundColor: colors.white,
   },
-  staffRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  staffRowInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  staffRowName: {
+  assignmentInfo: { flex: 1, gap: 2 },
+  assignmentName: {
     fontSize: typography.body,
     fontWeight: '600',
     color: colors.textDark,
   },
-  staffRowMeta: {
+  assignmentMeta: {
     fontSize: typography.small,
     color: colors.textGrey,
   },
-  assignBadgeButton: {
-    backgroundColor: colors.primary + '15',
-    paddingHorizontal: spacing.md,
+  assignmentActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  scheduleBadgeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary + '12',
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.primary + '30',
   },
-  assignBadgeButtonText: {
-    fontSize: typography.small,
+  scheduleBadgeText: {
+    fontSize: typography.small - 1,
     fontWeight: '700',
     color: colors.primary,
   },
-  viewText: {
+  assignText: {
     fontSize: typography.label,
     fontWeight: '600',
     color: colors.primary,
+  },
+  empty: {
+    fontSize: typography.small,
+    color: colors.textGrey,
+    fontStyle: 'italic',
+  },
+  actionBtnPrimary: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  actionBtnText: {
+    fontSize: typography.body,
+    fontWeight: '600',
+    color: colors.white,
   },
 });

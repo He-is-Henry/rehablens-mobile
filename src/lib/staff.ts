@@ -34,3 +34,28 @@ export const updateStaffAssignment = async (
 
 export const deleteStaffAssignment = async (id: string) =>
   apiClient.delete(`/staff/assignments/${id}`);
+
+export const getStaffAssignmentSchedules = async (assignmentId: string) =>
+  apiClient.get<Schedule[]>(`/staff/assignment/${assignmentId}/schedules`);
+
+export const createStaffSchedules = async (
+  assignmentId: string,
+  entries: {
+    scheduledDate: string;
+    minSessions: number;
+    maxSessions: number;
+  }[],
+) =>
+  apiClient.post<Schedule[]>(`/staff/assignment/${assignmentId}/schedules`, {
+    entries,
+  });
+
+export const updateStaffSchedule = async (
+  scheduleId: string,
+  payload: Partial<
+    Pick<Schedule, "minSessions" | "maxSessions" | "scheduledDate">
+  >,
+) => apiClient.patch<Schedule>(`/staff/schedules/${scheduleId}`, payload);
+
+export const deleteStaffSchedule = async (scheduleId: string) =>
+  apiClient.delete<Schedule>(`/staff/schedules/${scheduleId}`);

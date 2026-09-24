@@ -45,6 +45,7 @@ export default function HospitalDashboard() {
     setStaff((prev) => [...(prev ?? []), staffLink])
   }
 
+
   return (
     <View style={styles.container}>
 
@@ -112,7 +113,6 @@ export default function HospitalDashboard() {
       >
         <Text style={styles.fabText}>+</Text>
       </Pressable>
-
     </View>
   );
 }

@@ -1,5 +1,6 @@
-import { colors, radius, spacing, typography } from '@/constants/theme';
+﻿import { colors, radius, spacing, typography } from '@/constants/theme';
 import { useStaffQuery } from '@/queries/staff';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import {
   ActivityIndicator,
@@ -8,29 +9,27 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View
+  View,
 } from 'react-native';
 
 type Props = {
-  link: Link;
+  link: any;
   close(): void;
   onAssignExercise(): void;
 };
 
 export default function PatientDetailModal({ link, close, onAssignExercise }: Props) {
   const patient = link.patientId;
-
-  const { data: assignments, loading: loadingAssignments } = useStaffQuery.patientAssignments(link._id)
+  const { data: assignments, loading: loadingAssignments } = useStaffQuery.patientAssignments(link._id);
 
   return (
     <Modal transparent statusBarTranslucent animationType="fade" onRequestClose={close}>
       <Pressable style={styles.overlay} onPress={close}>
         <Pressable style={styles.card} onPress={() => { }}>
-
           <View style={styles.header}>
             <Text style={styles.title}>Patient details</Text>
             <Pressable onPress={close} hitSlop={8} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>×</Text>
+              <Ionicons name="close" size={18} color={colors.textGrey} />
             </Pressable>
           </View>
 
@@ -43,14 +42,18 @@ export default function PatientDetailModal({ link, close, onAssignExercise }: Pr
               <Text style={styles.meta}>{patient.customId}</Text>
               <Text style={styles.meta}>{patient.email}</Text>
             </View>
-            <View style={[
-              styles.badge,
-              link.verified ? styles.badgeVerified : styles.badgePending,
-            ]}>
-              <Text style={[
-                styles.badgeText,
-                link.verified ? styles.badgeTextVerified : styles.badgeTextPending,
-              ]}>
+            <View
+              style={[
+                styles.badge,
+                link.verified ? styles.badgeVerified : styles.badgePending,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.badgeText,
+                  link.verified ? styles.badgeTextVerified : styles.badgeTextPending,
+                ]}
+              >
                 {link.verified ? 'Verified' : 'Pending'}
               </Text>
             </View>
@@ -58,32 +61,72 @@ export default function PatientDetailModal({ link, close, onAssignExercise }: Pr
 
           <View style={styles.divider} />
 
-          <ScrollView contentContainerStyle={{ gap: spacing.md, paddingBottom: spacing.xl }}>
-            <View style={styles.divider} />
-            <InfoRow label="Linked since" value={new Date(link.createdAt).toLocaleDateString('en-GB', {
-              day: 'numeric', month: 'short', year: 'numeric',
-            })} />
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <InfoRow
+              label="Linked since"
+              value={new Date(link.createdAt).toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+            />
 
-            <View style={{ gap: spacing.sm }}>
+            <View style={styles.assignmentsSection}>
               <Text style={styles.sectionLabel}>Assignments</Text>
+
               {loadingAssignments || !assignments ? (
                 <ActivityIndicator color={colors.primary} />
               ) : assignments.length === 0 ? (
                 <Text style={styles.empty}>No assignments yet</Text>
               ) : (
-                assignments.map((a) => (
-                  <Pressable onPress={() => {
-                    router.push({
-                      pathname: '/(staff)/patient/[patientId]/assignment/[assignmentId]',
-                      params: { assignmentId: a._id, patientId: patient._id },
-                    });
-                  }}> <View key={a._id} style={styles.assignmentRow}>
-                      <Text style={styles.assignmentName}>{a.exerciseId?.name ?? 'Exercise'}</Text>
-                      <Text style={styles.assignmentMeta}>{a.customReps ?? a.exerciseId?.targetReps} reps · {a.status}</Text>
-                      <Text style={styles.assignText}>View →</Text>
+                assignments.map((a: any) => (
+                  <View key={a._id} style={styles.assignmentRow}>
+                    <Pressable
+                      style={styles.assignmentInfo}
+                      onPress={() => {
+                        close();
+                        router.push({
+                          pathname: '/(staff)/patient/[patientId]/assignment/[assignmentId]',
+                          params: { assignmentId: a._id, patientId: patient._id },
+                        });
+                      }}
+                    >
+                      <Text style={styles.assignmentName}>
+                        {a.exerciseId?.name ?? 'Exercise'}
+                      </Text>
+                      <Text style={styles.assignmentMeta}>
+                        {a.customReps ?? a.exerciseId?.targetReps} reps · {a.status}
+                      </Text>
+                    </Pressable>
 
+                    <View style={styles.assignmentActions}>
+                      <Pressable
+                        style={styles.scheduleBadgeBtn}
+                        onPress={() => {
+                          close();
+                          router.push({
+                            pathname: '/(staff)/schedules/[assignmentId]',
+                            params: { assignmentId: a._id },
+                          });
+                        }}
+                      >
+                        <Ionicons name="calendar-outline" size={14} color={colors.primary} />
+                        <Text style={styles.scheduleBadgeText}>Schedule</Text>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => {
+                          close();
+                          router.push({
+                            pathname: '/(staff)/patient/[patientId]/assignment/[assignmentId]',
+                            params: { assignmentId: a._id, patientId: patient._id },
+                          });
+                        }}
+                      >
+                        <Text style={styles.assignText}>View →</Text>
+                      </Pressable>
                     </View>
-                  </Pressable>
+                  </View>
                 ))
               )}
             </View>
@@ -98,7 +141,6 @@ export default function PatientDetailModal({ link, close, onAssignExercise }: Pr
               <Text style={styles.actionBtnText}>Assign exercise</Text>
             </Pressable>
           </ScrollView>
-
         </Pressable>
       </Pressable>
     </Modal>
@@ -125,6 +167,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 420,
+    maxHeight: '85%',
     backgroundColor: colors.white,
     borderRadius: radius.md,
     padding: spacing.lg,
@@ -147,12 +190,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.textGrey + '18',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeBtnText: {
-    fontSize: 18,
-    lineHeight: 18,
-    color: colors.textGrey,
-    fontWeight: '600',
   },
   avatarRow: {
     flexDirection: 'row',
@@ -193,6 +230,7 @@ const styles = StyleSheet.create({
   badgeTextVerified: { color: colors.success },
   badgeTextPending: { color: colors.accent },
   divider: { height: 1, backgroundColor: colors.border },
+  scrollContent: { gap: spacing.md, paddingBottom: spacing.xl },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -208,6 +246,7 @@ const styles = StyleSheet.create({
     color: colors.textDark,
     fontWeight: '600',
   },
+  assignmentsSection: { gap: spacing.sm },
   sectionLabel: {
     fontSize: typography.label,
     fontWeight: '700',
@@ -221,8 +260,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
+  assignmentInfo: { flex: 1, gap: 2 },
   assignmentName: {
     fontSize: typography.body,
     fontWeight: '600',
@@ -231,6 +273,27 @@ const styles = StyleSheet.create({
   assignmentMeta: {
     fontSize: typography.small,
     color: colors.textGrey,
+  },
+  assignmentActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  scheduleBadgeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary + '12',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  scheduleBadgeText: {
+    fontSize: typography.small - 1,
+    fontWeight: '700',
+    color: colors.primary,
   },
   assignText: {
     fontSize: typography.label,
@@ -244,6 +307,9 @@ const styles = StyleSheet.create({
   },
   actionBtnPrimary: {
     backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
   },
   actionBtnText: {
     fontSize: typography.body,

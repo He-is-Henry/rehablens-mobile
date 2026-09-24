@@ -1,18 +1,17 @@
-﻿import { colors, spacing, typography } from '@/constants/theme';
+﻿import { config } from '@/config';
+import { colors, spacing, typography } from '@/constants/theme';
 import Constants from 'expo-constants';
 import { StyleSheet, Text, View } from 'react-native';
 
 export default function VersionFooter() {
   const version = Constants.expoConfig?.version;
-  const otaVersion = Constants.expoConfig?.extra?.otaVersion || 0;
 
   return (
     <View style={styles.container}>
       <Text style={styles.text}>
-        RehabLens v{version} · OTA {otaVersion}
+        RehabLens v{version} · OTA {config.otaVersion}
       </Text>
     </View>
-
   );
 }
 
