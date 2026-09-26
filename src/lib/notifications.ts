@@ -51,3 +51,10 @@ export async function syncPushToken(currentSessionToken?: string | null) {
     console.error("PUSH TOKEN SYNC ERROR:", err);
   }
 }
+
+export async function sendLocalNotification(title: string, body: string) {
+  await Notifications.scheduleNotificationAsync({
+    content: { title, body },
+    trigger: null,
+  });
+}

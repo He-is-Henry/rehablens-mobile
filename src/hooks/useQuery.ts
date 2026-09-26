@@ -1,6 +1,5 @@
 import { useAuth } from "@/context/auth.context";
 import { useNetwork } from "@/context/network.context";
-import createStorage from "@/lib/storage";
 import { useEffect, useState } from "react";
 import Toast from "react-native-toast-message";
 
@@ -81,7 +80,6 @@ export function useQuery<T extends object>({
 
   useEffect(() => {
     if (!user) {
-      const globalStorage = createStorage();
       setLoading(false);
       return;
     }

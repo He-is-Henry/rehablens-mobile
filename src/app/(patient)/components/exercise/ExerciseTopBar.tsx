@@ -1,14 +1,14 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = {
   exerciseName: string;
   repsCompleted: number;
   targetReps: number;
   onBackPress: () => void;
+  toggleCamera: () => void;
 };
 
 export function ExerciseTopBar({
@@ -16,6 +16,7 @@ export function ExerciseTopBar({
   repsCompleted,
   targetReps,
   onBackPress,
+  toggleCamera
 }: Props) {
   const insets = useSafeAreaInsets();
 
@@ -38,6 +39,10 @@ export function ExerciseTopBar({
           {repsCompleted} / {targetReps}
         </Text>
       </View>
+      <Pressable onPress={toggleCamera} style={styles.cameraSwitch} hitSlop={8}>
+        <Ionicons name="camera-reverse-outline" size={24} color="#fff" />
+      </Pressable>
+
     </View>
   );
 }
@@ -80,5 +85,13 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: typography.small,
     fontWeight: '700',
+  },
+  cameraSwitch: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

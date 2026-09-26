@@ -46,7 +46,7 @@ export default function SessionFeed() {
             </View>
             <Text style={styles.meta}>
               {item.repsCompleted}/{item.targetReps} reps ·{' '}
-              {item.status === 'completed' ? 'Completed' : 'Abandoned'}
+              {item.status === 'completed' ? 'Completed' : item.status === 'in_progress' ? 'In progress' : 'Abandoned'}
             </Text>
           </View>
         );

@@ -26,7 +26,6 @@ export const NetworkProvider = ({ children }: { children: ReactNode }) => {
       debounceRef.current = setTimeout(() => {
         setIsOnline(online);
 
-        // don't notify on first load, only on actual changes
         if (!initializedRef.current) {
           initializedRef.current = true;
           prevOnlineRef.current = online;
@@ -52,7 +51,7 @@ export const NetworkProvider = ({ children }: { children: ReactNode }) => {
         }
 
         prevOnlineRef.current = online;
-      }, 3000); // 3 second debounce — ignores flaky connection blips
+      }, 3000);
     });
 
     return () => {
@@ -60,6 +59,8 @@ export const NetworkProvider = ({ children }: { children: ReactNode }) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
+
+
 
   const recheck = async () => {
     setIsChecking(true);

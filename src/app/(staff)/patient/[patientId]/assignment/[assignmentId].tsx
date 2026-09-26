@@ -25,7 +25,6 @@ export default function StaffAssignmentScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Text style={styles.backText}>← Back</Text>

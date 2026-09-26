@@ -60,7 +60,7 @@ export default function PatientDashboard() {
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0]} 👋</Text>
-              <StreakBadge streak={user?.currentStreak ?? 0} />
+              <StreakBadge streak={user?.currentStreak ?? 0} lastCompletedDate={user?.lastCompletedDate} />
             </View>
             <Text style={styles.meta}>{user?.customId}</Text>
           </View>

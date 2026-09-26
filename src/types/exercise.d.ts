@@ -112,7 +112,7 @@ type SessionResult = {
   repsCompleted: number;
   targetReps: number;
   durationSeconds: number;
-  status: "completed" | "abandoned";
+  status: "completed" | "abandoned" | "in_progress";
   createdAt: Date;
   completedAt: string;
 };

@@ -26,7 +26,7 @@ type Props = {
 
 export default function AssignPatientSection({ staffId, excludeLinkIds, onAssigned, onSearchFocus }: Props) {
 
-  const { data: links, loading } = useHospitalQuery.linkedPatients(staffId)
+  const { data: links, loading } = useHospitalQuery.linkedPatients()
   const [query, setQuery] = useState('');
   const [assigningId, setAssigningId] = useState('');
 

@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
+  useWindowDimensions
 } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import {
@@ -17,9 +17,10 @@ import {
 
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/auth.context';
-import { finishSessionResult, startSessionResult } from '@/lib/patient';
 import { usePatientQuery } from '@/queries/patient';
 
+import { useNetwork } from '@/context/network.context';
+import { useSessionQueue } from '@/hooks/useSessionQueue';
 import { runOnJS } from 'react-native-worklets';
 import { ExerciseHUD } from '../components/exercise/ExerciseHUD';
 import {
@@ -29,6 +30,7 @@ import {
   meetsAllOrAny,
 } from '../components/exercise/exerciseMath';
 import { ExerciseTopBar } from '../components/exercise/ExerciseTopBar';
+import { ExitConfirmModal } from '../components/exercise/ExitConfirmModal';
 import { PreStartScreen } from '../components/exercise/PreStartScreen';
 import { SessionSummaryOverlay } from '../components/exercise/SessionSummaryOverlay';
 import { SkeletonOverlay } from '../components/exercise/SkeletonOverlay';
@@ -48,19 +50,26 @@ export default function ExerciseScreen() {
 
   const { data: schedule, loading: loadingSchedule } =
     usePatientQuery.scheduleById(scheduleId);
+  const { start, finish } = useSessionQueue();
+  const { isOnline } = useNetwork()
 
   const { requireStorage } = useAuth();
   const storage = requireStorage();
 
-  const assignment = typeof schedule?.assignmentId === 'object' ? schedule.assignmentId : null;
-  const exercise = typeof assignment?.exerciseId === 'object' ? assignment.exerciseId : null;
+  const assignment = schedule?.assignmentId
+  const exercise = assignment?.exerciseId
 
   const targetReps = assignment?.customReps ?? exercise?.targetReps ?? 0;
   const holdSeconds = assignment?.customHoldSeconds ?? exercise?.holdSeconds ?? 0;
 
   const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice('front');
-  const { width: W, height: H } = useWindowDimensions();
+
+  const [cameraFacing, setCameraFacing] = useState<'front' | 'back'>('front');
+  const device = useCameraDevice(cameraFacing);
+
+  const toggleCamera = () => {
+    setCameraFacing(f => f === 'front' ? 'back' : 'front');
+  }; const { width: W, height: H } = useWindowDimensions();
 
   const scaleX = W / FRAME_W;
   const scaleY = H / FRAME_H;
@@ -96,6 +105,7 @@ export default function ExerciseScreen() {
 
   const [showSummary, setShowSummary] = useState(false);
   const [showStreak, setShowStreak] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [summaryData, setSummaryData] = useState({
     pointsAwarded: 0,
     durationSeconds: 0,
@@ -104,9 +114,10 @@ export default function ExerciseScreen() {
     rankMovedUp: false as boolean | number,
     newRank: 0,
     previousRank: 0,
+    offline: !isOnline
   });
 
-  // ==================== HOOKS ====================
+  // HOOKS
 
   useEffect(() => {
     if (!hasPermission) requestPermission();
@@ -137,7 +148,7 @@ export default function ExerciseScreen() {
       if (!sessionStartRef.current) sessionStartRef.current = Date.now();
 
       if (scheduleId && assignment?._id && !sessionIdRef.current) {
-        startSessionResult({
+        start({
           scheduleId,
           assignmentId: assignment._id,
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -183,8 +194,7 @@ export default function ExerciseScreen() {
     };
   }, []);
 
-  // ==================== HELPER FUNCTIONS ====================
-
+  // HELPER FUNCTIONS
   const toggleSpeech = () => {
     setSpeechEnabled((prev) => {
       const next = !prev;
@@ -250,11 +260,17 @@ export default function ExerciseScreen() {
             : 0;
 
           if (sessionIdRef.current) {
-            finishSessionResult(sessionIdRef.current, {
+            finish(sessionIdRef.current, {
               repsCompleted: newReps,
               durationSeconds: duration,
               status: 'completed',
               timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              scheduleId,
+              assignmentId: assignment._id,
+            }, {
+              repTriggerCount: exercise.repTriggers.length,
+              targetReps,
+              holdSeconds,
             })
               .then((res) => {
                 setSummaryData({
@@ -265,6 +281,7 @@ export default function ExerciseScreen() {
                   rankMovedUp: res.rankMovedUp ?? false,
                   newRank: res.newRank ?? 0,
                   previousRank: res.previousRank ?? 0,
+                  offline: res?._offline ?? false
                 });
                 setShowSummary(true);
               })
@@ -277,26 +294,20 @@ export default function ExerciseScreen() {
                   rankMovedUp: false,
                   newRank: 0,
                   previousRank: 0,
+                  offline: !isOnline
                 });
                 setShowSummary(true);
               });
           }
         }
       }
-    }
-  };
+    };
+  }
 
   const handleBackPress = () => {
-    if (sessionIdRef.current) {
-      const duration = sessionStartRef.current
-        ? Math.round((Date.now() - sessionStartRef.current) / 1000)
-        : 0;
-      finishSessionResult(sessionIdRef.current, {
-        repsCompleted: repsRef.current,
-        durationSeconds: duration,
-        status: 'abandoned',
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      }).catch(() => { });
+    if (repsRef.current > 0 && repsCompleted < targetReps) {
+      setShowExitConfirm(true);
+      return;
     }
     router.back();
   };
@@ -359,8 +370,7 @@ export default function ExerciseScreen() {
     router.back();
   };
 
-  // ==================== EARLY RETURNS ====================
-
+  // EARLY RETURNS 
   if (loadingSchedule) {
     return (
       <View style={styles.center}>
@@ -419,7 +429,7 @@ export default function ExerciseScreen() {
           if (!isTrackingRef.current) return;
 
           const now = Date.now();
-          if (now - lastRenderRef.current < 33) return; // ~30 FPS throttling
+          if (now - lastRenderRef.current < 33) return;
           lastRenderRef.current = now;
 
           poseShared.value = newPose;
@@ -429,11 +439,11 @@ export default function ExerciseScreen() {
             const angle = getAngle(newPose, primaryCheck);
             primaryAngleShared.value = angle;
             runOnJS(setPrimaryAngle)(angle);
-          }
 
-          triggerRepStateMachine(newPose);
-        }}
-      />
+            triggerRepStateMachine(newPose);
+          }
+        }
+        } />
 
       {isTracking && (
         <SkeletonOverlay
@@ -449,6 +459,7 @@ export default function ExerciseScreen() {
         repsCompleted={repsCompleted}
         targetReps={targetReps}
         onBackPress={handleBackPress}
+        toggleCamera={toggleCamera}
       />
 
       <ExerciseHUD
@@ -480,6 +491,38 @@ export default function ExerciseScreen() {
         streakCount={summaryData.newStreak}
         onClose={handleStreakClose}
       />
+      <ExitConfirmModal
+        visible={showExitConfirm}
+        repsCompleted={repsCompleted}
+        targetReps={targetReps}
+        onSaveAndExit={() => {
+          setShowExitConfirm(false);
+          if (sessionIdRef.current) {
+            const duration = sessionStartRef.current
+              ? Math.round((Date.now() - sessionStartRef.current) / 1000)
+              : 0;
+            finish(sessionIdRef.current, {
+              repsCompleted: repsRef.current,
+              durationSeconds: duration,
+              status: 'abandoned',
+              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              scheduleId,
+              assignmentId: assignment._id,
+            },
+              {
+                targetReps,
+                holdSeconds,
+                repTriggerCount: exercise.repTriggers.length
+              }).catch(() => { });
+          }
+          router.back();
+        }}
+        onExitWithoutSaving={() => {
+          setShowExitConfirm(false);
+          router.back();
+        }}
+        onCancel={() => setShowExitConfirm(false)}
+      />
     </View>
   );
 }
@@ -492,4 +535,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#000',
   },
+
 });

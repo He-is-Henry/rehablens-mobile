@@ -2,7 +2,8 @@ import OfflineBanner from '@/components/offlineBanner';
 import { OutdatedBanner } from '@/components/OutdatedBanner';
 import { UpdateBanner } from '@/components/UpdateBanner';
 import { AuthProvider } from '@/context/auth.context';
-import { NetworkProvider } from '@/context/network.context';
+import { NetworkProvider, useNetwork } from '@/context/network.context';
+import { useSessionQueue } from '@/hooks/useSessionQueue';
 import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -21,6 +22,20 @@ Notifications.setNotificationHandler({
     shouldShowList: true
   }),
 });
+
+function FlushOnReconnect() {
+
+  const { flush } = useSessionQueue();
+  const { isOnline } = useNetwork()
+
+  useEffect(() => {
+    flush();
+  }, [isOnline]);
+
+  return null;
+}
+
+
 
 export default function RootLayout() {
   useEffect(() => {
@@ -55,6 +70,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <NetworkProvider>
         <AuthProvider>
+          <FlushOnReconnect />
           <StatusBar style="dark" />
           <OfflineBanner />
           <OutdatedBanner />

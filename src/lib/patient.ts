@@ -36,6 +36,8 @@ export const finishSessionResult = async (
     durationSeconds: number;
     status?: "completed" | "abandoned";
     timeZone: string;
+    scheduleId?: string;
+    assignmentId?: string;
   },
 ) =>
   apiClient.patch<{
@@ -46,6 +48,7 @@ export const finishSessionResult = async (
     rankMovedUp: boolean;
     previousRank: number;
     newRank: number;
+    _offline?: boolean;
   }>(`/patient/session-results/${id}/finish`, payload);
 
 export const getPatientSessionResults = async () =>
